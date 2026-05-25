@@ -78,22 +78,25 @@ class SpaceBackground:
         self.width = width
         self.height = height
         self.stars = [Star(width, height) for _ in range(stars_count)]
-        self.planet = Planet(width, height)
+        self.planets = [Planet(width, height) for _ in range(3)]
 
     def resize(self, width, height):
         self.width = width
         self.height = height
-        self.planet.resize(width, height)
+        for planet in self.planets:
+            planet.resize(width, height)
         for star in self.stars:
             star.reset(width, height)
 
     def update(self, dt, charge_level):
-        self.planet.update(dt, charge_level)
+        for planet in self.planets:
+            planet.update(dt, charge_level)
         for star in self.stars:
             star.update(dt, self.width, self.height, charge_level)
 
     def render(self, surface):
-        self.planet.render(surface)
+        for planet in self.planets:
+            planet.render(surface)
 
     def render_stars(self, surface, charge_level):
         for star in self.stars:

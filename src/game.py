@@ -4,7 +4,7 @@ import random
 from config import *
 from src.player import Player
 from src.projectile import Bullet
-from src.enemy import Asteroid, Drone
+from src.enemy import Drone, Meteorite, Gunship
 from src.utils import circle_collision
 from src.spawner import WaveSpawner
 from src.void_core import VoidCore
@@ -39,6 +39,7 @@ class Game:
         self.player = Player(self.screen_width // 2, self.screen_height // 2)
         self.enemies = []
         self.bullets = []
+        self.enemy_bullets = []
         self.void_cores = []
         self.particles = []
         
@@ -160,6 +161,12 @@ class Game:
                 # Удаление пуль за экраном или с истекшим временем
                 if bullet.is_off_screen(self.screen_width, self.screen_height) or bullet.is_expired():
                     self.bullets.remove(bullet)
+
+            # Обновление вражеских пуль
+            for enemy_bullet in self.enemy_bullets[:]:
+                enemy_bullet.update(dt)
+                if enemy_bullet.is_dead(self.screen_width, self.screen_height):
+                    self.enemy_bullets.remove(enemy_bullet)
             
             # Обновление врагов
             for enemy in self.enemies[:]:
@@ -169,6 +176,17 @@ class Game:
                     self.screen_width,
                     self.screen_height
                 )
+
+                # Метеориты исчезают, улетая за левую границу
+                if enemy.type == "meteorite" and enemy.position.x < -enemy.size - 40:
+                    self.enemies.remove(enemy)
+                    continue
+
+                # Стрельба редких кораблей
+                if enemy.type == "gunship":
+                    shot = enemy.try_shoot((self.player.position.x, self.player.position.y))
+                    if shot is not None:
+                        self.enemy_bullets.append(shot)
             
             # Обновление Void Cores
             for core in self.void_cores[:]:
@@ -181,7 +199,12 @@ class Game:
                     self.particles.remove(particle)
             
             # Обновление системы спавна волн
-            new_enemies = self.spawner.update(dt, self.player.charge_level, self.screen_width, self.screen_height)
+            new_enemies = self.spawner.update(
+                dt,
+                self.player.charge_level,
+                self.screen_width,
+                self.screen_height,
+            )
             self.enemies.extend(new_enemies)
             
             # Проверка коллизий: пули vs враги
@@ -208,7 +231,9 @@ class Game:
                             explosion = create_explosion(
                                 enemy.position.x, 
                                 enemy.position.y, 
-                                COLOR_ASTEROID if enemy.type == "asteroid" else COLOR_DRONE
+                                COLOR_METEORITE if enemy.type == "meteorite" else (
+                                    COLOR_GUNSHIP if enemy.type == "gunship" else COLOR_DRONE
+                                )
                             )
                             self.particles.extend(explosion)
                             
@@ -242,6 +267,16 @@ class Game:
                         # Враг тоже умирает при столкновении
                         if enemy in self.enemies:
                             self.enemies.remove(enemy)
+
+            # Проверка коллизий: вражеские пули vs игрок
+            for enemy_bullet in self.enemy_bullets[:]:
+                if circle_collision(
+                    (self.player.position.x, self.player.position.y), self.player.size,
+                    (enemy_bullet.position.x, enemy_bullet.position.y), enemy_bullet.size
+                ):
+                    if self.player.take_damage(enemy_bullet.damage):
+                        self.sound.play('hit')
+                    self.enemy_bullets.remove(enemy_bullet)
             
             # Проверка смерти игрока
             if self.player.is_dead():
@@ -278,6 +313,10 @@ class Game:
             # Отрисовка пуль
             for bullet in self.bullets:
                 bullet.render(game_surface)
+
+            # Отрисовка вражеских пуль
+            for enemy_bullet in self.enemy_bullets:
+                enemy_bullet.render(game_surface)
             
             # Отрисовка игрока
             if self.player:
@@ -311,6 +350,7 @@ class Game:
         self.score = 0
         self.enemies.clear()
         self.bullets.clear()
+        self.enemy_bullets.clear()
         self.void_cores.clear()
         self.particles.clear()
         # Пересоздание игрока
