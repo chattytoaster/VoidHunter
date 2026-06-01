@@ -104,11 +104,28 @@ class Game:
                     
                     # Void Flash по Q
                     if event.key == pygame.K_q and self.game_state == "PLAYING":
-                        if self.player.activate_void_flash():
-                            # Уничтожаем всех врагов
-                            for enemy in self.enemies:
-                                self.score += enemy.score
-                            self.enemies.clear()
+                        flash_level = self.player.activate_void_flash()
+                        if flash_level > 0:
+                            # Наносим урон всем врагам в зависимости от уровня
+                            for enemy in self.enemies[:]:
+                                enemy.take_damage(flash_level)
+                                # Если враг умер от урона
+                                if enemy.is_dead():
+                                    self.score += enemy.score
+                                    # Звук взрыва
+                                    self.sound.play('explosion')
+                                    # Создание частиц взрыва
+                                    explosion = create_explosion(
+                                        enemy.position.x, 
+                                        enemy.position.y, 
+                                        COLOR_METEORITE if enemy.type == "meteorite" else (
+                                            COLOR_GUNSHIP if enemy.type == "gunship" else COLOR_DRONE
+                                        )
+                                    )
+                                    self.particles.extend(explosion)
+                                    # Удаляем врага
+                                    if enemy in self.enemies:
+                                        self.enemies.remove(enemy)
                             # Активируем визуальный эффект
                             self.void_flash_timer = VOID_FLASH_DURATION
                             # Звук Void Flash

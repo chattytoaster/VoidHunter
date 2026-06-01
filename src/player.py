@@ -105,10 +105,11 @@ class Player:
     def activate_void_flash(self):
         """Активация способности Void Flash"""
         if self.charge_level > 0:
+            current_level = self.charge_level
             self.charge_level = 0
             self.cores_collected = 0  # Сбрасываем и счетчик ядер
-            return True
-        return False
+            return current_level  # Возвращаем уровень заряда для расчета урона
+        return 0
     
     def get_damage_multiplier(self):
         """Получить множитель урона от заряда"""

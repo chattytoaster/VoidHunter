@@ -1,4 +1,5 @@
 import pygame
+import os
 from config import *
 
 
@@ -7,8 +8,18 @@ class HUD:
     
     def __init__(self):
         """Инициализация HUD"""
-        self.font = pygame.font.Font(None, UI_FONT_SIZE)
-        self.font_large = pygame.font.Font(None, UI_FONT_SIZE_LARGE)
+        # Определяем путь к шрифту
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        font_path = os.path.join(base_dir, 'assets', 'fonts', 'ArcadeJeu-Regular.otf')
+        
+        # Загружаем шрифт
+        try:
+            self.font = pygame.font.Font(font_path, UI_FONT_SIZE)
+            self.font_large = pygame.font.Font(font_path, UI_FONT_SIZE_LARGE)
+        except:
+            # Fallback на стандартный шрифт
+            self.font = pygame.font.Font(None, UI_FONT_SIZE)
+            self.font_large = pygame.font.Font(None, UI_FONT_SIZE_LARGE)
         
     def render(self, screen, player, score, screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT):
         """Отрисовка всего UI"""

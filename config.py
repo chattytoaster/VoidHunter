@@ -25,35 +25,35 @@ PLAYER_SIZE = 20                   # Радиус треугольника
 PLAYER_MAX_SPEED = 400             # Пикселей в секунду
 PLAYER_ACCELERATION = 1200         # Ускорение
 PLAYER_DAMPING = 0.92              # Трение (0.92 = 8% потери скорости)
-PLAYER_MAX_HP = 50                  # Начальное здоровье
+PLAYER_MAX_HP = 5                  # Начальное здоровье
 PLAYER_INVULNERABILITY_TIME = 1.5  # Секунды неуязвимости после урона
 
 # === ОРУЖИЕ ===
 BULLET_SPEED = 800                 # Скорость пули
 BULLET_SIZE = 4                    # Радиус пули
-BULLET_DAMAGE = 1.5                # Базовый урон
+BULLET_DAMAGE = 1.0                # Базовый урон
 BULLET_LIFETIME = 2.0              # Секунды до исчезновения
-FIRE_RATE = 0.10                   # Секунды между выстрелами (базовая)
+FIRE_RATE = 0.15                   # Секунды между выстрелами (базовая)
 
 # === ВРАГИ ===
 # Дрон
 DRONE_SIZE = 15
 DRONE_HP = 1
-DRONE_SPEED = 180
+DRONE_SPEED = 150
 DRONE_DAMAGE = 1
 DRONE_SCORE = 10
 DRONE_CHASE_RANGE = 10000            # Дистанция, на которой дрон начинает преследование
 
 # Метеорит (крупный, живучий, не преследует)
 METEORITE_SIZE = 38
-METEORITE_HP = 6
+METEORITE_HP = 10
 METEORITE_SPEED = 120
 METEORITE_DAMAGE = 1
 METEORITE_SCORE = 50
 
 # Вражеский корабль (редкий, стреляет медленно)
 GUNSHIP_SIZE = 22
-GUNSHIP_HP = 3
+GUNSHIP_HP = 5
 GUNSHIP_SPEED = 95
 GUNSHIP_DAMAGE = 1
 GUNSHIP_SCORE = 30
@@ -89,7 +89,7 @@ VOID_CORES_PER_LEVEL = [
     207,    # Уровень 18 (+20)
     228,    # Уровень 19 (+21)
     250,    # Уровень 20 (+22)
-]  # Кумулятивно
+]
 
 # Бонусы за уровень заряда
 CHARGE_DAMAGE_BONUS = 0.20         # +20% урона за уровень
@@ -104,8 +104,8 @@ VOID_FLASH_COLOR = (255, 255, 255) # Белая вспышка
 WAVE_INTERVAL = 6.5                # Секунды между волнами (чаще)
 BASE_ENEMIES_PER_WAVE = 2          # Базовое количество врагов
 ENEMIES_INCREASE_PER_WAVE = 1      # Увеличение за волну
-DRONE_SPAWN_WEIGHT = 0.2           # 56% дроны
-GUNSHIP_SPAWN_WEIGHT = 0.02        # 5% стреляющие корабли
+DRONE_SPAWN_WEIGHT = 0.15          # 56% дроны
+GUNSHIP_SPAWN_WEIGHT = 0.05        # 5% стреляющие корабли
 METEORITE_SPAWN_WEIGHT = 0.02      # 1% метеориты (очень редко)
 SPAWN_MARGIN = 250                 # Отступ от края экрана для спавна
 

@@ -1,4 +1,5 @@
 import pygame
+import os
 from config import *
 
 
@@ -22,9 +23,20 @@ class MainMenu:
     
     def __init__(self):
         """Инициализация меню"""
-        self.font_title = pygame.font.Font(None, 96)
-        self.font_menu = pygame.font.Font(None, 48)
-        self.font_small = pygame.font.Font(None, 28)
+        # Определяем путь к шрифту
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        font_path = os.path.join(base_dir, 'assets', 'fonts', 'ArcadeJeu-Regular.otf')
+        
+        # Загружаем шрифт
+        try:
+            self.font_title = pygame.font.Font(font_path, 96)
+            self.font_menu = pygame.font.Font(font_path, 48)
+            self.font_small = pygame.font.Font(font_path, 24)
+        except:
+            # Fallback на стандартный шрифт
+            self.font_title = pygame.font.Font(None, 96)
+            self.font_menu = pygame.font.Font(None, 48)
+            self.font_small = pygame.font.Font(None, 24)
         
         # Пункты меню
         self.menu_items = [
