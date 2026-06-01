@@ -13,6 +13,7 @@ from src.ui import HUD
 from src.sound import SoundManager
 from src.camera import Camera
 from src.background import SpaceBackground
+from src.menu import MainMenu
 
 
 class Game:
@@ -33,7 +34,7 @@ class Game:
         
         # Состояние игры
         self.running = True
-        self.game_state = "PLAYING"  # PLAYING или GAME_OVER
+        self.game_state = "MENU"  # MENU, PLAYING или GAME_OVER
         
         # Игровые объекты
         self.player = Player(self.screen_width // 2, self.screen_height // 2)
@@ -48,6 +49,9 @@ class Game:
         
         # UI
         self.hud = HUD()
+        
+        # Главное меню
+        self.menu = MainMenu()
         
         # Звуковая система
         self.sound = SoundManager()
@@ -80,64 +84,88 @@ class Game:
                 )
                 self.background.resize(self.screen_width, self.screen_height)
             
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            # Обработка событий меню
+            if self.game_state == "MENU":
+                mouse_pos = pygame.mouse.get_pos()
+                action = self.menu.handle_event(event, mouse_pos)
+                if action == "start":
+                    self.start_game()
+                elif action == "exit":
                     self.running = False
-                
-                # Перезапуск игры по R на экране Game Over
-                if event.key == pygame.K_r and self.game_state == "GAME_OVER":
-                    self.reset()
-                
-                # Void Flash по Q
-                if event.key == pygame.K_q and self.game_state == "PLAYING":
-                    if self.player.activate_void_flash():
-                        # Уничтожаем всех врагов
-                        for enemy in self.enemies:
-                            self.score += enemy.score
-                        self.enemies.clear()
-                        # Активируем визуальный эффект
-                        self.void_flash_timer = VOID_FLASH_DURATION
-                        # Звук Void Flash
-                        self.sound.play('void_flash')
-                
-                # Стрельба по Пробелу
-                if event.key == pygame.K_SPACE and self.game_state == "PLAYING":
-                    mouse_pos = pygame.mouse.get_pos()
-                    if self.player.shoot(mouse_pos):
-                        # Создание пули
-                        damage = BULLET_DAMAGE * self.player.get_damage_multiplier()
-                        bullet = Bullet(
-                            self.player.position.x,
-                            self.player.position.y,
-                            mouse_pos[0],
-                            mouse_pos[1],
-                            damage
-                        )
-                        self.bullets.append(bullet)
-                        # Звук выстрела
-                        self.sound.play('shoot')
             
-            # Стрельба по ЛКМ
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and self.game_state == "PLAYING":
-                    mouse_pos = pygame.mouse.get_pos()
-                    if self.player.shoot(mouse_pos):
-                        # Создание пули
-                        damage = BULLET_DAMAGE * self.player.get_damage_multiplier()
-                        bullet = Bullet(
-                            self.player.position.x,
-                            self.player.position.y,
-                            mouse_pos[0],
-                            mouse_pos[1],
-                            damage
-                        )
-                        self.bullets.append(bullet)
-                        # Звук выстрела
-                        self.sound.play('shoot')
+            elif self.game_state == "PLAYING":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.game_state = "MENU"
+                
+                    # Перезапуск игры по R на экране Game Over
+                    if event.key == pygame.K_r and self.game_state == "GAME_OVER":
+                        self.reset()
+                    
+                    # Void Flash по Q
+                    if event.key == pygame.K_q and self.game_state == "PLAYING":
+                        if self.player.activate_void_flash():
+                            # Уничтожаем всех врагов
+                            for enemy in self.enemies:
+                                self.score += enemy.score
+                            self.enemies.clear()
+                            # Активируем визуальный эффект
+                            self.void_flash_timer = VOID_FLASH_DURATION
+                            # Звук Void Flash
+                            self.sound.play('void_flash')
+                    
+                    # Стрельба по Пробелу
+                    if event.key == pygame.K_SPACE and self.game_state == "PLAYING":
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.player.shoot(mouse_pos):
+                            # Создание пули
+                            damage = BULLET_DAMAGE * self.player.get_damage_multiplier()
+                            bullet = Bullet(
+                                self.player.position.x,
+                                self.player.position.y,
+                                mouse_pos[0],
+                                mouse_pos[1],
+                                damage
+                            )
+                            self.bullets.append(bullet)
+                            # Звук выстрела
+                            self.sound.play('shoot')
+                
+                # Стрельба по ЛКМ
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1 and self.game_state == "PLAYING":
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.player.shoot(mouse_pos):
+                            # Создание пули
+                            damage = BULLET_DAMAGE * self.player.get_damage_multiplier()
+                            bullet = Bullet(
+                                self.player.position.x,
+                                self.player.position.y,
+                                mouse_pos[0],
+                                mouse_pos[1],
+                                damage
+                            )
+                            self.bullets.append(bullet)
+                            # Звук выстрела
+                            self.sound.play('shoot')
+            
+            elif self.game_state == "GAME_OVER":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self.reset()
+                    if event.key == pygame.K_ESCAPE:
+                        self.game_state = "MENU"
     
     def update(self, dt):
         """Обновление игровой логики"""
-        if self.game_state == "PLAYING":
+        if self.game_state == "MENU":
+            # Обновление меню
+            mouse_pos = pygame.mouse.get_pos()
+            self.menu.update(mouse_pos, self.screen_width, self.screen_height)
+            # Обновление фона в меню
+            self.background.update(dt, 0)
+        
+        elif self.game_state == "PLAYING":
             # Получение состояния клавиатуры и мыши
             keys = pygame.key.get_pressed()
             mouse_pos = pygame.mouse.get_pos()
@@ -287,7 +315,15 @@ class Game:
         # Заливка фона
         self.screen.fill(COLOR_BG)
         
-        if self.game_state == "PLAYING":
+        if self.game_state == "MENU":
+            # Отрисовка фона в меню
+            self.background.render(self.screen)
+            self.background.render_stars(self.screen, 0)
+            
+            # Отрисовка меню
+            self.menu.render(self.screen, self.screen_width, self.screen_height)
+        
+        elif self.game_state == "PLAYING":
             # Создаем временную поверхность для эффекта тряски
             game_surface = pygame.Surface((self.screen_width, self.screen_height))
             game_surface.fill(COLOR_BG)
@@ -357,6 +393,11 @@ class Game:
         self.player = Player(self.screen_width // 2, self.screen_height // 2)
         # Сброс спавнера
         self.spawner.reset()
+    
+    def start_game(self):
+        """Начало новой игры из меню"""
+        self.reset()
+        self.game_state = "PLAYING"
     
     def game_over(self):
         """Переход в состояние Game Over"""
