@@ -1,6 +1,6 @@
 import random
-from config import *
-from src.enemy import Drone, Meteorite, Gunship
+from OLD.config import *
+from OLD.src.enemy import Drone, Meteorite, Gunship
 
 
 class WaveSpawner:

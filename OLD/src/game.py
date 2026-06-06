@@ -1,24 +1,23 @@
 import pygame
 import sys
 import random
-from config import *
-from src.player import Player
-from src.projectile import Bullet
-from src.enemy import Drone, Meteorite, Gunship
-from src.utils import circle_collision
-from src.spawner import WaveSpawner
-from src.void_core import VoidCore
-from src.particle import Particle, create_explosion
-from src.ui import HUD
-from src.sound import SoundManager
-from src.camera import Camera
-from src.background import SpaceBackground
-from src.menu import MainMenu
+from OLD.config import *
+from OLD.src.player import Player
+from OLD.src.projectile import Bullet
+from OLD.src.utils import circle_collision
+from OLD.src.spawner import WaveSpawner
+from OLD.src.void_core import VoidCore
+from OLD.src.particle import create_explosion
+from OLD.src.ui import HUD
+from OLD.src.sound import SoundManager
+from OLD.src.camera import Camera
+from OLD.src.background import SpaceBackground
+from OLD.src.menu import MainMenu
 
 
 class Game:
     """Главный класс игры, управляющий игровым циклом"""
-    
+
     def __init__(self):
         """Инициализация игры"""
         pygame.init()
@@ -67,7 +66,7 @@ class Game:
         
         # Void Flash эффект
         self.void_flash_timer = 0
-        
+
     def handle_events(self):
         """Обработка событий (клавиатура, мышь, закрытие окна)"""
         for event in pygame.event.get():
@@ -116,8 +115,8 @@ class Game:
                                     self.sound.play('explosion')
                                     # Создание частиц взрыва
                                     explosion = create_explosion(
-                                        enemy.position.x, 
-                                        enemy.position.y, 
+                                        enemy.position.x,
+                                        enemy.position.y,
                                         COLOR_METEORITE if enemy.type == "meteorite" else (
                                             COLOR_GUNSHIP if enemy.type == "gunship" else COLOR_DRONE
                                         )
@@ -130,7 +129,7 @@ class Game:
                             self.void_flash_timer = VOID_FLASH_DURATION
                             # Звук Void Flash
                             self.sound.play('void_flash')
-                    
+
                     # Стрельба по Пробелу
                     if event.key == pygame.K_SPACE and self.game_state == "PLAYING":
                         mouse_pos = pygame.mouse.get_pos()
@@ -199,7 +198,7 @@ class Game:
             # Обновление таймера Void Flash
             if self.void_flash_timer > 0:
                 self.void_flash_timer -= dt
-            
+
             # Обновление пуль
             for bullet in self.bullets[:]:
                 bullet.update(dt)
@@ -242,7 +241,7 @@ class Game:
                 particle.update(dt)
                 if particle.is_dead():
                     self.particles.remove(particle)
-            
+
             # Обновление системы спавна волн
             new_enemies = self.spawner.update(
                 dt,
@@ -268,20 +267,20 @@ class Game:
                         # Если враг умер
                         if enemy.is_dead():
                             self.score += enemy.score
-                            
+
                             # Звук взрыва
                             self.sound.play('explosion')
                             
                             # Создание частиц взрыва
                             explosion = create_explosion(
-                                enemy.position.x, 
-                                enemy.position.y, 
+                                enemy.position.x,
+                                enemy.position.y,
                                 COLOR_METEORITE if enemy.type == "meteorite" else (
                                     COLOR_GUNSHIP if enemy.type == "gunship" else COLOR_DRONE
                                 )
                             )
                             self.particles.extend(explosion)
-                            
+
                             # Дроп Void Core с шансом
                             if random.random() < VOID_CORE_DROP_CHANCE:
                                 core = VoidCore(enemy.position.x, enemy.position.y)

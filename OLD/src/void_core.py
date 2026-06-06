@@ -1,6 +1,6 @@
 import pygame
 import math
-from config import *
+from OLD.config import *
 
 
 class VoidCore:

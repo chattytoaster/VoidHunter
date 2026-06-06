@@ -1,6 +1,6 @@
 import pygame
 import os
-from config import *
+from OLD.config import *
 
 
 class HUD:

@@ -1,7 +1,7 @@
 import pygame
 import math
-from config import *
-from src.utils import draw_glow_circle
+from OLD.config import *
+from OLD.src.utils import draw_glow_circle
 
 
 class Bullet:
