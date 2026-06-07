@@ -1,5 +1,8 @@
+"""
+Точка входа в игру VoidHunter
+"""
 
-from OLD.src.game import Game
+from src.game import Game
 
 
 def main():

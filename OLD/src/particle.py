@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from OLD.config import *
+from config import *
 
 
 class Particle:

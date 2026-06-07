@@ -1,7 +1,7 @@
 import pygame
 import math
-from OLD.config import *
-from OLD.src.utils import draw_glow_polygon
+from config import *
+from src.utils import draw_glow_polygon
 
 
 class Player:

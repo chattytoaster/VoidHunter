@@ -1,8 +1,8 @@
 import pygame
 import random
 import math
-from OLD.config import *
-from OLD.src.utils import draw_glow_circle, draw_glow_polygon
+from config import *
+from src.utils import draw_glow_circle, draw_glow_polygon
 
 
 class Enemy:

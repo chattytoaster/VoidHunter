@@ -1,6 +1,6 @@
 import pygame
 import os
-from OLD.config import *
+from config import *
 
 
 class MenuItem:
