@@ -133,9 +133,7 @@ class Game:
     
     def update(self, dt):
         """Обновление логики игры"""
-        if self.game_state == "MENU":
-        self.menu.update(dt) 
-        
+
         if self.game_state == "PLAYING":
             # обновляем игрока
             if self.player:
