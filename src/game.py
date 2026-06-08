@@ -56,7 +56,9 @@ class Game:
         return distance < (r1 + r2)
         
     def handle_events(self):
-        """Обработка событий"""
+        """Обработка событий клавиатуры и мыши"""
+
+        # pygame.event.get() возвращает все события, которые произошли с прошлого кадра.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -133,50 +135,40 @@ class Game:
         if self.game_state == "PLAYING":
             # обновляем игрока
             if self.player:
+                # массив состояния клавиш
                 keys = pygame.key.get_pressed()
                 mouse_pos = pygame.mouse.get_pos()
                 self.player.update(dt, keys, mouse_pos)
-                if hasattr(self.player, 'update'):
-                    keys = pygame.key.get_pressed()
-                    mouse_pos = pygame.mouse.get_pos()
-                    self.player.update(dt, keys, mouse_pos)
-            
+
             # спавним врагов
             self.spawn_enemies(dt)
             
             # обновляем врагов
             for enemy in self.enemies[:]:
-                if self.player:
-                    enemy.update(dt, self.player.x, self.player.y)
-                else:
-                    enemy.update(dt, 0, 0)
-                if hasattr(enemy, 'update'):
-                    if self.player and hasattr(self.player, 'x'):
+                if not hasattr(enemy, "update"):
+                    continue
+                try:
+                    if self.player and hasattr(self.player, "x") and hasattr(self.player, "y"):
                         enemy.update(dt, self.player.x, self.player.y)
                     else:
-                        if hasattr(enemy, 'x'):
-                            enemy.update(dt)
-            
+                        enemy.update(dt)
+                except TypeError:
+                    enemy.update(dt)
             # обновляем пули
             for bullet in self.bullets[:]:
-                 bullet.update(dt)
-                 if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
-                     self.bullets.remove(bullet)
-                 if hasattr(bullet, 'update'):
-                    bullet.update(dt)
-                    if hasattr(bullet, 'is_off_screen'):
-                        if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
-                            if bullet in self.bullets:
-                                self.bullets.remove(bullet)
+                if not hasattr(bullet, "update") or not hasattr(bullet, "is_off_screen"):
+                    continue
+                bullet.update(dt)
+                if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
+                    self.bullets.remove(bullet)
                 
             # обновляем void cores
             for core in self.void_cores[:]:
-                core.update(dt)
                 if hasattr(core, 'update'):
                     core.update(dt)
             
             # КОЛЛИЗИИ
-            
+
             # 1. Проверка коллизий: пули vs враги
             for bullet in self.bullets[:]:
                 for enemy in self.enemies[:]:
@@ -260,25 +252,20 @@ class Game:
         elif self.game_state == "PLAYING":
             # рисуем врагов
             for enemy in self.enemies:
-                enemy.render(self.screen)
                 if hasattr(enemy, 'render'):
                     enemy.render(self.screen)
 
             for core in self.void_cores:
-                core.render(self.screen)
                 if hasattr(core, 'render'):
                     core.render(self.screen)
             
             # рисуем пули
             for bullet in self.bullets:
-                bullet.render(self.screen)
                 if hasattr(bullet, 'render'):
                     bullet.render(self.screen)
             
             # рисуем игрока
             if self.player:
-                # когда Dev B создаст класс, тут будет:
-                self.player.render(self.screen)
                 if hasattr(self.player, 'render'):
                     self.player.render(self.screen)
             
@@ -295,7 +282,6 @@ class Game:
             if hasattr(self, 'ui'):
                 self.ui.render_game_over(self.screen, self.score)
             else:
-                # пока простой текст
                 text = font.render("GAME OVER", True, (255, 0, 0))
                 text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
                 self.screen.blit(text, text_rect)
