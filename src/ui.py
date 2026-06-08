@@ -1,3 +1,5 @@
+# Файл для UI (меню и интерфейс)
+
 import pygame
 import random
 from config import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -39,23 +41,19 @@ class Menu:
     """Класс главного меню"""
     
     def __init__(self):
+        # Шрифты
         self.font_title = pygame.font.Font(None, 74)
         self.font_button = pygame.font.Font(None, 36)
         
+        # Цвета
         self.white = (255, 255, 255)
         self.gray = (150, 150, 150)
         
-        self.start_hover = False
-        self.exit_hover = False
-        
-        # Используем константы из config
+        # Размеры экрана из config
         self.screen_width = SCREEN_WIDTH
         self.screen_height = SCREEN_HEIGHT
         
-        # Создаем звезды сразу
-        self.stars = [MovingStar(self.screen_width, self.screen_height) for _ in range(150)]
-        
-        # Создаем кнопки
+        # Кнопки
         self.start_button = pygame.Rect(
             self.screen_width // 2 - 100, 
             self.screen_height // 2 - 30, 
@@ -66,61 +64,110 @@ class Menu:
             self.screen_height // 2 + 40, 
             200, 50
         )
+        
+        # Состояния кнопок
+        self.start_hover = False
+        self.exit_hover = False
+        
+        # Создаем звезды
+        self.stars = [MovingStar(self.screen_width, self.screen_height) for _ in range(150)]
     
-    def update_stars(self, dt):
-        """Обновление звезд"""
+    def update(self, dt):
+        """Обновление меню (звезды)"""
         for star in self.stars:
             star.update(dt)
     
     def handle_event(self, event, mouse_pos):
         """Обработка событий в меню"""
-        # Обновляем hover при движении мыши
+        # Обновляем наведение при движении мыши
         if event.type == pygame.MOUSEMOTION:
             self.start_hover = self.start_button.collidepoint(mouse_pos)
             self.exit_hover = self.exit_button.collidepoint(mouse_pos)
+            return None
         
-        # Обработка клика
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        # Обработка клика мыши
+        if event.type == pygame.MOUSEBUTTONDOWN:
             if self.start_button.collidepoint(mouse_pos):
                 return "start"
             elif self.exit_button.collidepoint(mouse_pos):
                 return "exit"
         
         # Обработка клавиш
-        elif event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 return "start"
             elif event.key == pygame.K_ESCAPE:
                 return "exit"
         
         return None
-        
+    
     def render(self, screen):
         """Отрисовка меню"""
-        # Рисуем звезды
+        # 1. Рисуем звезды
         for star in self.stars:
             star.draw(screen)
         
-        # Заголовок
+        # 2. Заголовок
         title = self.font_title.render("VOID HUNTER", True, self.white)
         title_rect = title.get_rect(center=(self.screen_width // 2, self.screen_height // 4))
         screen.blit(title, title_rect)
         
-        # Кнопка START
+        # 3. Кнопка START
         start_color = self.gray if self.start_hover else self.white
-        pygame.draw.rect(screen, start_color, self.start_button, 2)
+        pygame.draw.rect(screen, start_color, self.start_button, 3)  # толщина 3 для видимости
         start_text = self.font_button.render("START", True, start_color)
         start_text_rect = start_text.get_rect(center=self.start_button.center)
         screen.blit(start_text, start_text_rect)
         
-        # Кнопка EXIT
+        # 4. Кнопка EXIT
         exit_color = self.gray if self.exit_hover else self.white
-        pygame.draw.rect(screen, exit_color, self.exit_button, 2)
+        pygame.draw.rect(screen, exit_color, self.exit_button, 3)
         exit_text = self.font_button.render("EXIT", True, exit_color)
         exit_text_rect = exit_text.get_rect(center=self.exit_button.center)
         screen.blit(exit_text, exit_text_rect)
         
-        # Подсказка
+        # 5. Подсказка
         hint = self.font_button.render("Press SPACE to start", True, self.gray)
         hint_rect = hint.get_rect(center=(self.screen_width // 2, self.screen_height - 50))
         screen.blit(hint, hint_rect)
+
+
+class UI:
+    """Класс игрового интерфейса"""
+    
+    def __init__(self):
+        self.font = pygame.font.Font(None, 36)
+        self.font_large = pygame.font.Font(None, 72)
+        self.white = (255, 255, 255)
+        self.red = (255, 0, 0)
+        self.green = (0, 255, 0)
+        
+    def render(self, screen, player, score):
+        if player:
+            hp_text = self.font.render(f"HP: {player.hp}", True, self.white)
+            screen.blit(hp_text, (20, 20))
+            
+            charge_text = self.font.render(f"Charge: {player.charge_level}", True, self.white)
+            screen.blit(charge_text, (20, 50))
+        
+        score_text = self.font.render(f"Score: {score}", True, self.white)
+        score_rect = score_text.get_rect(topright=(SCREEN_WIDTH - 20, 20))
+        screen.blit(score_text, score_rect)
+        
+    def render_game_over(self, screen, score):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        screen.blit(overlay, (0, 0))
+        
+        game_over_text = self.font_large.render("GAME OVER", True, self.red)
+        game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        screen.blit(game_over_text, game_over_rect)
+        
+        score_text = self.font.render(f"Final Score: {score}", True, self.white)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
+        screen.blit(score_text, score_rect)
+        
+        restart_text = self.font.render("Press R to restart", True, self.white)
+        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
+        screen.blit(restart_text, restart_rect)
