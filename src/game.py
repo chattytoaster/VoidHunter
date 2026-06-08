@@ -6,13 +6,13 @@ from config import *
 
 # импортируем классы от других разработчиков
 # когда Dev B создаст классы - раскомментировать
-# from src.entities import Player, Drone, Meteorite, Bullet
+from src.entities import Player, Drone, Meteorite, Bullet
 
 # когда Dev C создаст классы - раскомментировать
-# from src.void_core import VoidCore
-# from src.ui import Menu, UI
-# from src.sound import SoundManager
-# from src.spawner import Spawner
+from src.void_core import VoidCore
+from src.ui import Menu, UI
+from src.sound import SoundManager
+from src.spawner import Spawner
 
 
 class Game:
@@ -30,8 +30,7 @@ class Game:
         self.game_state = "MENU"  # MENU, PLAYING, GAME_OVER
         
         # создаем игрока (когда Dev B создаст класс Player - раскомментировать)
-        # self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        self.player = None  # пока заглушка
+        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         
         # списки для объектов
         self.enemies = []  # будет заполняться в spawn_enemies()
@@ -39,10 +38,10 @@ class Game:
         self.void_cores = []  # будет заполняться при смерти врагов
         
         # системы от Dev C (раскомментировать когда создаст классы)
-        # self.menu = Menu()
-        # self.ui = UI()
-        # self.sound = SoundManager()
-        # self.spawner = Spawner()
+        self.menu = Menu()
+        self.ui = UI()
+        self.sound = SoundManager()
+        self.spawner = Spawner()
         
         # счет
         self.score = 0
@@ -128,18 +127,10 @@ class Game:
                     y = random.randint(0, SCREEN_HEIGHT)
                 
                 # создаем врага (когда Dev B создаст классы - раскомментировать)
-                # if enemy_type == 'drone':
-                #     enemy = Drone(x, y)
-                # else:
-                #     enemy = Meteorite(x, y)
-                # self.enemies.append(enemy)
-                
-                # пока просто сохраняем данные в словаре
-                enemy = {
-                    'type': enemy_type,
-                    'x': x,
-                    'y': y
-                }
+                if enemy_type == 'drone':
+                    enemy = Drone(x, y)
+                else:
+                    enemy = Meteorite(x, y)
                 self.enemies.append(enemy)
     
     def update(self, dt):
@@ -148,9 +139,9 @@ class Game:
             # обновляем игрока
             if self.player:
                 # когда Dev B создаст класс, тут будет:
-                # keys = pygame.key.get_pressed()
-                # mouse_pos = pygame.mouse.get_pos()
-                # self.player.update(dt, keys, mouse_pos)
+                keys = pygame.key.get_pressed()
+                mouse_pos = pygame.mouse.get_pos()
+                self.player.update(dt, keys, mouse_pos)
                 if hasattr(self.player, 'update'):
                     keys = pygame.key.get_pressed()
                     mouse_pos = pygame.mouse.get_pos()
@@ -162,10 +153,10 @@ class Game:
             # обновляем врагов
             for enemy in self.enemies[:]:
                 # когда Dev B создаст класс, тут будет:
-                # if self.player:
-                #     enemy.update(dt, self.player.x, self.player.y)
-                # else:
-                #     enemy.update(dt, 0, 0)
+                if self.player:
+                    enemy.update(dt, self.player.x, self.player.y)
+                else:
+                    enemy.update(dt, 0, 0)
                 if hasattr(enemy, 'update'):
                     if self.player and hasattr(self.player, 'x'):
                         enemy.update(dt, self.player.x, self.player.y)
@@ -176,10 +167,10 @@ class Game:
             # обновляем пули
             for bullet in self.bullets[:]:
                 # когда Dev B создаст класс, тут будет:
-                # bullet.update(dt)
-                # if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
-                #     self.bullets.remove(bullet)
-                if hasattr(bullet, 'update'):
+                 bullet.update(dt)
+                 if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
+                     self.bullets.remove(bullet)
+                 if hasattr(bullet, 'update'):
                     bullet.update(dt)
                     if hasattr(bullet, 'is_off_screen'):
                         if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
@@ -189,7 +180,7 @@ class Game:
             # обновляем void cores
             for core in self.void_cores[:]:
                 # когда Dev C создаст класс, тут будет:
-                # core.update(dt)
+                core.update(dt)
                 if hasattr(core, 'update'):
                     core.update(dt)
             
@@ -219,9 +210,9 @@ class Game:
                                 
                                 # дроп VoidCore (50% шанс)
                                 # когда Dev C создаст класс VoidCore - раскомментировать
-                                # if random.random() < VOID_CORE_DROP_CHANCE:
-                                #     core = VoidCore(enemy.x, enemy.y)
-                                #     self.void_cores.append(core)
+                                if random.random() < VOID_CORE_DROP_CHANCE:
+                                    core = VoidCore(enemy.x, enemy.y)
+                                    self.void_cores.append(core)
                                 
                                 if enemy in self.enemies:
                                     self.enemies.remove(enemy)
@@ -251,8 +242,8 @@ class Game:
                         
                         if core.is_collected(self.player.x, self.player.y, self.player.size):
                             # логика прокачки (когда Dev C добавит атрибуты в Player)
-                            # if hasattr(self.player, 'collect_void_core'):
-                            #     self.player.collect_void_core()
+                            if hasattr(self.player, 'collect_void_core'):
+                                self.player.collect_void_core()
                             
                             if core in self.void_cores:
                                 self.void_cores.remove(core)
@@ -269,20 +260,19 @@ class Game:
         
         if self.game_state == "MENU":
             # когда Dev C создаст Menu - раскомментировать
-            # if hasattr(self, 'menu'):
-            #     self.menu.render(self.screen)
-            # else:
-            # пока простой текст
-            font = pygame.font.Font(None, 50)
-            text = font.render("Press SPACE to start", True, (255, 255, 255))
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            self.screen.blit(text, text_rect)
+             if hasattr(self, 'menu'):
+                 self.menu.render(self.screen)
+             else:
+                font = pygame.font.Font(None, 50)
+                text = font.render("Press SPACE to start", True, (255, 255, 255))
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+                self.screen.blit(text, text_rect)
             
         elif self.game_state == "PLAYING":
             # рисуем врагов
             for enemy in self.enemies:
                 # когда Dev B создаст класс, тут будет:
-                # enemy.render(self.screen)
+                enemy.render(self.screen)
                 # пока рисуем заглушку
                 if hasattr(enemy, 'render'):
                     enemy.render(self.screen)
@@ -290,44 +280,44 @@ class Game:
             # рисуем void cores
             for core in self.void_cores:
                 # когда Dev C создаст класс, тут будет:
-                # core.render(self.screen)
+                core.render(self.screen)
                 if hasattr(core, 'render'):
                     core.render(self.screen)
             
             # рисуем пули
             for bullet in self.bullets:
                 # когда Dev B создаст класс, тут будет:
-                # bullet.render(self.screen)
+                bullet.render(self.screen)
                 if hasattr(bullet, 'render'):
                     bullet.render(self.screen)
             
             # рисуем игрока
             if self.player:
                 # когда Dev B создаст класс, тут будет:
-                # self.player.render(self.screen)
+                self.player.render(self.screen)
                 if hasattr(self.player, 'render'):
                     self.player.render(self.screen)
             
             # рисуем UI (счет)
             # когда Dev C создаст UI - раскомментировать
-            # if hasattr(self, 'ui'):
-            #     self.ui.render(self.screen, self.player, self.score)
-            # else:
+            if hasattr(self, 'ui'):
+                self.ui.render(self.screen, self.player, self.score)
+            else:
             # пока простой текст
-            font = pygame.font.Font(None, 30)
-            score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
-            self.screen.blit(score_text, (10, 10))
+                font = pygame.font.Font(None, 30)
+                score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
+                self.screen.blit(score_text, (10, 10))
             
         elif self.game_state == "GAME_OVER":
-            # когда Dev C создаст UI - раскомментировать
-            # if hasattr(self, 'ui'):
-            #     self.ui.render_game_over(self.screen, self.score)
-            # else:
-            # пока простой текст
             font = pygame.font.Font(None, 50)
-            text = font.render("GAME OVER", True, (255, 0, 0))
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            self.screen.blit(text, text_rect)
+            # когда Dev C создаст UI - раскомментировать
+            if hasattr(self, 'ui'):
+                self.ui.render_game_over(self.screen, self.score)
+            else:
+                # пока простой текст
+                text = font.render("GAME OVER", True, (255, 0, 0))
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+                self.screen.blit(text, text_rect)
             
             score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
             score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 60))
@@ -349,9 +339,8 @@ class Game:
         self.void_cores.clear()
         
         # создаем игрока (когда Dev B создаст класс - раскомментировать)
-        # self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        self.player = None  # пока заглушка
-    
+        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
     def game_over(self):
         """Переход в состояние Game Over"""
         self.game_state = "GAME_OVER"
