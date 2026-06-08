@@ -7,7 +7,7 @@ pygame.init()
 screen_width = 800
 screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("SPACE SHOOTER")
+pygame.display.set_caption("VoidHunter")
 clock = pygame.time.Clock()
 
 # Цвета
@@ -98,7 +98,7 @@ while running:
         star.draw(screen)
 
     # Заголовок
-    title = font_title.render("SPACE SHOOTER", True, WHITE)
+    title = font_title.render("Void Hunter", True, WHITE)
     title_rect = title.get_rect(center=(screen_width // 2, screen_height // 4))
     screen.blit(title, title_rect)
 
