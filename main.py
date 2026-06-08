@@ -1,7 +1,3 @@
-"""
-Точка входа в игру VoidHunter
-"""
-
 from src.game import Game
 
 
