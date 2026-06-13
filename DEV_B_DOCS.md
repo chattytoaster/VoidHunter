@@ -1,6 +1,4 @@
-# Developer B - Code Documentation
-
-This document provides a detailed explanation of the entities and systems implemented by Developer B, including how they function mathematically and logically within Pygame.
+# Developer lynx
 
 ## 1. Player Class (`src/player.py`)
 
