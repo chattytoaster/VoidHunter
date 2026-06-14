@@ -13,22 +13,26 @@ VOID_CORE_PICKUP_RADIUS = getattr(config, "VOID_CORE_PICKUP_RADIUS", VOID_CORE_S
 VOID_CORE_COLOR = getattr(config, "COLOR_VOID_CORE", (170, 80, 255))
 VOID_CORE_GLOW_COLOR = getattr(config, "COLOR_VOID_CORE_GLOW", (220, 170, 255))
 VOID_CORE_PULSE_SPEED = getattr(config, "VOID_CORE_PULSE_SPEED", 4.0)
+VOID_CORE_LIFETIME = getattr(config, "VOID_CORE_LIFETIME", 3.0)
 
 
 class VoidCore:
     """Класс собираемого ядра (Void Core)"""
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, sound_manager=None):
         """
         Args:
             x (float): x координата появления
             y (float): y координата появления
+            sound_manager (SoundManager, optional): Менеджер звуков для воспроизведения звука сбора
         """
         self.pos = [x, y]
         self.radius = VOID_CORE_SIZE
         self.pickup_radius = VOID_CORE_PICKUP_RADIUS
         self.timer = 0.0
+        self.life_timer = 0.0  # Таймер жизни ядра
         self.active = True
+        self.sound_manager = sound_manager
 
         # Загрузка спрайта ядра
         self.image = None
@@ -41,12 +45,17 @@ class VoidCore:
 
     def update(self, dt):
         """
-        Обновление таймера анимации пульсации.
+        Обновление таймера анимации пульсации и проверка времени жизни.
 
         Args:
             dt (float): Delta time в секундах
         """
         self.timer += dt
+        self.life_timer += dt
+        
+        # Если ядро прожило больше VOID_CORE_LIFETIME секунд - оно исчезает
+        if self.life_timer >= VOID_CORE_LIFETIME:
+            self.active = False
 
     def is_collected(self, player_x, player_y, player_size):
         """
@@ -66,6 +75,19 @@ class VoidCore:
 
         return distance <= (self.pickup_radius + player_size)
 
+    def collect(self):
+        """
+        Собрать ядро. Воспроизводит звук и возвращает True если сбор успешен.
+        
+        Returns:
+            bool: True (ядро собрано)
+        """
+        if self.sound_manager:
+            self.sound_manager.play("pickup")
+        
+        self.active = False
+        return True
+
     def render(self, screen):
         """
         Отрисовка пульсирующего ядра (спрайт или векторный круг) с эффектом сияния.
@@ -73,6 +95,9 @@ class VoidCore:
         Args:
             screen (pygame.Surface): поверхность экрана
         """
+        if not self.active:
+            return
+            
         x, y = int(self.pos[0]), int(self.pos[1])
 
         # Коэффициент пульсации от 0 до 1 (плавная синусоида)
@@ -99,6 +124,4 @@ class VoidCore:
             screen.blit(scaled_image, rect)
         else:
             pygame.draw.circle(screen, VOID_CORE_COLOR, (x, y), core_radius)
-
-            # Яркий центр
             pygame.draw.circle(screen, (255, 255, 255), (x, y), max(1, int(self.radius * 0.35)))
