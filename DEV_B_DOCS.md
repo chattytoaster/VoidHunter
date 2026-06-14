@@ -1,112 +1,102 @@
-# Developer lynx
+# Документация Developer B (Refactored to Vector2)
 
-## 1. Player Class (`src/player.py`)
+Этот документ описывает изменения, внесенные в код Developer B для строгого соответствия плану проекта (`PLAN.md`). Основной фокус — **упрощение математики за счет использования `pygame.math.Vector2`** вместо ручных вычислений и перевода всех комментариев на русский язык.
 
-The `Player` class handles movement, rotation, and input handling for the user's ship.
-
-### How it works
-- **Movement:** It uses WASD keys to modify the position. The diagonal movement is normalized so the player doesn't move faster diagonally.
-- **Rotation:** The player constantly faces the mouse cursor using `math.atan2()`, which calculates the angle between the player's coordinate and the mouse coordinate.
-- **Shooting:** Checks if `SPACE` or the left mouse button is pressed and returns a boolean for the main game loop to spawn a bullet.
-
-### Why it works
-Normalizing diagonal movement is crucial to maintain a consistent speed (`PLAYER_SPEED`). `math.atan2` is the standard mathematical approach in 2D games to find the correct radian angle to rotate a point towards a target. 
-
-### Snippet
-```python
-# Normalize diagonal movement to maintain consistent speed
-if dx != 0 or dy != 0:
-    length = math.hypot(dx, dy)
-    dx /= length
-    dy /= length
-    
-self.pos[0] += dx * self.speed * dt
-self.pos[1] += dy * self.speed * dt
-
-# Rotation logic using atan2 for accurate angle to cursor
-mouse_dx = mouse_pos[0] - self.pos[0]
-mouse_dy = mouse_pos[1] - self.pos[1]
-self.angle = math.atan2(mouse_dy, mouse_dx)
-```
+Эта документация также служит обучающим материалом для изучения того, как векторы делают код чище и понятнее.
 
 ---
 
-## 2. Enemy Classes (`src/enemy.py`)
+## 1. Класс Player (`src/player.py`)
 
-This file contains the base `Enemy` class and two specialized enemy types: `Drone` and `Meteorite`.
+Класс `Player` обрабатывает перемещение, поворот к курсору и логику стрельбы корабля игрока.
 
-### How it works
-- **Base Enemy:** Handles generic properties like health, taking damage, and tracking if the enemy is active. If `hp <= 0`, it is marked inactive.
-- **Drone:** Constantly calculates the distance to the player and moves directly towards them.
-- **Meteorite:** Spawns moving from left to right. It reverses its vertical velocity when hitting the top or bottom of the screen (bouncing). It automatically deactivates if it travels completely off the right edge of the screen.
+### Что было изменено
+- Позиция игрока теперь хранится не как список `[x, y]`, а как объект `pygame.math.Vector2(x, y)`.
+- Для расчета диагонального движения теперь используется встроенный метод векторов `normalize()`, вместо ручного использования `math.hypot`.
+- Вычисление направления к мыши теперь происходит через векторное вычитание `mouse_vec - self.pos`.
 
-### Why it works
-The `Drone` uses Euclidean distance (`math.hypot`) to find the exact vector to the player, allowing it to seamlessly track the player. The `Meteorite` is a simpler obstacle, relying on screen boundary collision checks to create a bouncing effect without needing complex physics.
+### Как это работает (Обучение)
 
-### Snippet
+**Движение:**
+Вместо того, чтобы вручную складывать `dx` и `dy`, мы создаем вектор движения `movement = Vector2(0, 0)`. При нажатии клавиш (W, A, S, D) мы меняем его `x` и `y`.
 ```python
-# Drone pursuit logic
-if player_pos:
-    dx = player_pos[0] - self.pos[0]
-    dy = player_pos[1] - self.pos[1]
-    dist = math.hypot(dx, dy) # Euclidean distance
-    
-    if dist > 0:
-        # Normalize direction and multiply by speed and delta time
-        self.pos[0] += (dx / dist) * self.speed * dt
-        self.pos[1] += (dy / dist) * self.speed * dt
-
-# Meteorite bounce logic
-if self.pos[1] - self.radius < 0:
-    self.pos[1] = self.radius
-    self.vel[1] *= -1 # Reverse Y velocity
+if movement.length_squared() > 0:
+    movement = movement.normalize()
+self.pos += movement * self.speed * dt
 ```
+Метод `.normalize()` автоматически превращает вектор любой длины в вектор с длиной 1 (сохраняя направление). Это гарантирует, что при движении по диагонали (когда нажаты сразу W и D) скорость не будет больше, чем при движении по прямой.
+
+**Вращение:**
+Векторная математика позволяет найти вектор направления от одной точки к другой простым вычитанием: `Вектор_Направления = Конечная_Точка - Начальная_Точка`.
+```python
+direction_vec = mouse_vec - self.pos
+self.angle = math.atan2(direction_vec.y, direction_vec.x)
+```
+Здесь мы вычитаем позицию игрока из позиции мыши, чтобы получить вектор, указывающий от игрока к мыши. Затем `math.atan2` дает нам правильный угол в радианах для отрисовки.
 
 ---
 
-## 3. Projectile Class (`src/projectile.py`)
+## 2. Классы врагов (`src/enemy.py`)
 
-Handles the bullets fired by the player.
+Этот файл содержит базовый класс `Enemy` и два конкретных типа: `Drone` (Дрон) и `Meteorite` (Метеорит).
 
-### How it works
-When instantiated, the bullet is given an initial position and a normalized direction. It continuously moves in that direction during its `update()` method. It checks its coordinates against `SCREEN_WIDTH` and `SCREEN_HEIGHT` to deactivate itself when off-screen to save memory.
+### Что было изменено
+- Позиция `self.pos` и скорость `self.vel` (для метеорита) стали объектами `Vector2`.
+- Вся логика преследования у дрона переведена на векторы.
+- Все комментарии переведены на русский язык.
 
-### Why it works
-By taking a normalized direction (calculated in the main game loop based on the player's angle), the bullet only needs basic linear multiplication (`direction * speed * dt`) to travel correctly. Removing it when it goes off-screen prevents a memory leak.
+### Как это работает (Обучение)
 
-### Snippet
+**Drone (Преследование):**
+Дрону нужно постоянно лететь в сторону игрока. Векторы делают эту логику тривиальной.
 ```python
-# Move in the specified direction
-self.pos[0] += self.dir[0] * self.speed * dt
-self.pos[1] += self.dir[1] * self.speed * dt
+target_vec = pygame.math.Vector2(player_pos)
+direction = target_vec - self.pos
 
-# Check if the bullet goes off screen bounds
-if (self.pos[0] < 0 or self.pos[0] > SCREEN_WIDTH or
-    self.pos[1] < 0 or self.pos[1] > SCREEN_HEIGHT):
-    self.active = False
+if direction.length_squared() > 0:
+    self.pos += direction.normalize() * self.speed * dt
 ```
+Как и при вращении игрока, вычитание `target_vec - self.pos` дает нам вектор направления. Затем мы его нормализуем (приводим длину к 1), умножаем на скорость `speed` и `dt` (дельта времени), и прибавляем к текущей позиции. Это всё! Никаких сложных формул с корнями и `math.hypot`.
+
+**Meteorite (Отскок):**
+Метеорит летит прямолинейно и отскакивает от верха и низа экрана.
+```python
+self.pos += self.vel * dt
+if self.pos.y - self.radius < 0: # Отскок от потолка
+    self.pos.y = self.radius
+    self.vel.y *= -1
+```
+Мы умножаем Y-составляющую вектора скорости на `-1`, чтобы изменить направление движения по вертикали на противоположное, создавая эффект отскока.
 
 ---
 
-## 4. Utilities (`src/utils.py`)
+## 3. Класс пули (`src/projectile.py`)
 
-Contains helper functions, specifically for collision.
+Обрабатывает пули, выпущенные игроком.
 
-### How it works
-The `circle_collision` function checks if the distance between two central points is less than or equal to the sum of their radii. 
+### Что было изменено
+- Начальное направление передается и сохраняется как `Vector2`, который сразу нормализуется.
 
-### Why it works
-Instead of using `math.sqrt` to find the exact distance (which is computationally expensive), it compares the squared distance against the squared sum of the radii. This significantly optimizes collision checks, which is essential when the game loop runs 60 times a second and checks multiple bullets against multiple enemies.
-
-### Snippet
+### Как это работает (Обучение)
+Пуля движется по прямой линии. Поскольку вектор направления `self.dir` имеет длину 1, мы просто умножаем его на скорость в каждом кадре:
 ```python
-def circle_collision(pos1, radius1, pos2, radius2):
-    dx = pos1[0] - pos2[0]
-    dy = pos1[1] - pos2[1]
-    
-    # Use squared distance to avoid expensive square root operations
-    distance_squared = dx**2 + dy**2
-    radii_sum_squared = (radius1 + radius2)**2
-    
-    return distance_squared <= radii_sum_squared
+self.pos += self.dir * self.speed * dt
 ```
+Сложение позиции и вектора работает интуитивно: компонент X вектора прибавляется к X позиции, а Y прибавляется к Y. Это заменяет две отдельные строчки кода на одну элегантную.
+
+---
+
+## 4. Утилиты (`src/utils.py`)
+
+Содержит вспомогательные функции, в частности проверку столкновений.
+
+### Что было изменено
+- Использован метод `distance_squared_to()` класса `Vector2` для более красивого и читаемого кода проверки коллизий.
+
+### Как это работает (Обучение)
+```python
+v1 = pygame.math.Vector2(pos1)
+v2 = pygame.math.Vector2(pos2)
+return v1.distance_squared_to(v2) <= (radius1 + radius2) ** 2
+```
+Вместо того чтобы вручную писать `(x1 - x2)**2 + (y1 - y2)**2`, мы используем встроенный метод `distance_squared_to()`. Он возвращает квадрат расстояния между двумя векторами. Мы сравниваем его с квадратом суммы радиусов (чтобы избежать тяжелой операции извлечения квадратного корня `math.sqrt`), что очень полезно для оптимизации игры.

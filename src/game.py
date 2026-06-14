@@ -4,7 +4,8 @@ import random
 import math
 from config import *
 
-from src.entities import Player, Drone, Meteorite, Bullet
+from src.player import Player
+from src.enemy import Drone, Meteorite
 from src.void_core import VoidCore
 from src.ui import Menu, UI
 from src.sound import SoundManager
@@ -132,13 +133,24 @@ class Game:
     
     def update(self, dt):
         """Обновление логики игры"""
+
         if self.game_state == "PLAYING":
             # обновляем игрока
             if self.player:
                 # массив состояния клавиш
                 keys = pygame.key.get_pressed()
                 mouse_pos = pygame.mouse.get_pos()
-                self.player.update(dt, keys, mouse_pos)
+                try:
+                    is_shooting = self.player.update(keys, mouse_pos, dt)
+                except Exception:
+
+                    is_shooting = False
+
+                if is_shooting and hasattr(self.player, 'shoot'):
+                    mouse_pos = pygame.mouse.get_pos()
+                    bullet = self.player.shoot(mouse_pos[0], mouse_pos[1])
+                    if bullet:
+                        self.bullets.append(bullet)
 
             # спавним врагов
             self.spawn_enemies(dt)
@@ -148,12 +160,17 @@ class Game:
                 if not hasattr(enemy, "update"):
                     continue
                 try:
-                    if self.player and hasattr(self.player, "x") and hasattr(self.player, "y"):
-                        enemy.update(dt, self.player.x, self.player.y)
+                    if self.player and hasattr(self.player, 'pos'):
+                        player_pos = (self.player.pos[0], self.player.pos[1])
+                        enemy.update(dt, player_pos)
                     else:
                         enemy.update(dt)
                 except TypeError:
-                    enemy.update(dt)
+                    # резервный вызов — только dt
+                    try:
+                        enemy.update(dt)
+                    except Exception:
+                        pass
             # обновляем пули
             for bullet in self.bullets[:]:
                 if not hasattr(bullet, "update") or not hasattr(bullet, "is_off_screen"):
@@ -172,49 +189,80 @@ class Game:
             # 1. Проверка коллизий: пули vs враги
             for bullet in self.bullets[:]:
                 for enemy in self.enemies[:]:
-                    # проверяем есть ли нужные атрибуты
-                    if (hasattr(bullet, 'x') and hasattr(bullet, 'y') and hasattr(bullet, 'size') and
-                        hasattr(enemy, 'x') and hasattr(enemy, 'y') and hasattr(enemy, 'size')):
-                        
-                        if self.circle_collision(bullet.x, bullet.y, bullet.size,
-                                                enemy.x, enemy.y, enemy.size):
-                            # враг получает урон
-                            if hasattr(enemy, 'take_damage') and hasattr(bullet, 'damage'):
-                                enemy.take_damage(bullet.damage)
-                            
-                            # удаляем пулю
-                            if bullet in self.bullets:
-                                self.bullets.remove(bullet)
-                            
-                            # если враг умер
-                            if hasattr(enemy, 'is_dead') and enemy.is_dead():
-                                if hasattr(enemy, 'score'):
-                                    self.score += enemy.score
-                                
-                                # дроп VoidCore (50% шанс)
-                                if random.random() < VOID_CORE_DROP_CHANCE:
-                                    core = VoidCore(enemy.x, enemy.y)
-                                    self.void_cores.append(core)
-                                
-                                if enemy in self.enemies:
-                                    self.enemies.remove(enemy)
-                            break
+                    # Попытка получить координаты/размеры для пули и врага
+                    def _get_xy_size(o):
+                        if hasattr(o, 'x') and hasattr(o, 'y') and hasattr(o, 'size'):
+                            return o.x, o.y, o.size
+                        if hasattr(o, 'pos') and hasattr(o, 'radius'):
+                            return o.pos[0], o.pos[1], o.radius
+                        if hasattr(o, 'pos') and hasattr(o, 'size'):
+                            return o.pos[0], o.pos[1], o.size
+                        return None
+
+                    b = _get_xy_size(bullet)
+                    e = _get_xy_size(enemy)
+                    if not b or not e:
+                        continue
+
+                    if self.circle_collision(b[0], b[1], b[2], e[0], e[1], e[2]):
+                        # враг получает урон
+                        if hasattr(enemy, 'take_damage') and hasattr(bullet, 'damage'):
+                            enemy.take_damage(bullet.damage)
+
+                        # удаляем пулю
+                        if bullet in self.bullets:
+                            self.bullets.remove(bullet)
+
+                        # считаем врага мёртвым по нескольким критериям
+                        enemy_dead = False
+                        if hasattr(enemy, 'is_dead') and enemy.is_dead():
+                            enemy_dead = True
+                        elif hasattr(enemy, 'active') and not enemy.active:
+                            enemy_dead = True
+                        elif hasattr(enemy, 'hp') and enemy.hp <= 0:
+                            enemy_dead = True
+
+                        if enemy_dead:
+                            if hasattr(enemy, 'score'):
+                                self.score += enemy.score
+
+                            # дроп VoidCore (50% шанс)
+                            if random.random() < VOID_CORE_DROP_CHANCE:
+                                # пытаемся взять координаты врага для спауна
+                                ex, ey, _ = e
+                                core = VoidCore(ex, ey)
+                                self.void_cores.append(core)
+
+                            if enemy in self.enemies:
+                                self.enemies.remove(enemy)
+                        break
             
             # 2. Проверка коллизий: враги vs игрок
             if self.player:
                 for enemy in self.enemies[:]:
-                    if (hasattr(self.player, 'x') and hasattr(self.player, 'y') and hasattr(self.player, 'size') and
-                        hasattr(enemy, 'x') and hasattr(enemy, 'y') and hasattr(enemy, 'size')):
-                        
-                        if self.circle_collision(self.player.x, self.player.y, self.player.size,
-                                                enemy.x, enemy.y, enemy.size):
-                            # игрок получает урон
-                            if hasattr(self.player, 'take_damage') and hasattr(enemy, 'damage'):
-                                self.player.take_damage(enemy.damage)
-                            
-                            # враг умирает при столкновении
-                            if enemy in self.enemies:
-                                self.enemies.remove(enemy)
+                    # Получаем координаты игрока и врага
+                    def _get_xy_size(o):
+                        if hasattr(o, 'x') and hasattr(o, 'y') and hasattr(o, 'size'):
+                            return o.x, o.y, o.size
+                        if hasattr(o, 'pos') and hasattr(o, 'radius'):
+                            return o.pos[0], o.pos[1], o.radius
+                        if hasattr(o, 'pos') and hasattr(o, 'size'):
+                            return o.pos[0], o.pos[1], o.size
+                        return None
+
+                    p = _get_xy_size(self.player)
+                    e = _get_xy_size(enemy)
+                    if not p or not e:
+                        continue
+
+                    if self.circle_collision(p[0], p[1], p[2], e[0], e[1], e[2]):
+                        # игрок получает урон
+                        if hasattr(self.player, 'take_damage') and hasattr(enemy, 'damage'):
+                            self.player.take_damage(enemy.damage)
+
+                        # враг умирает при столкновении
+                        if enemy in self.enemies:
+                            self.enemies.remove(enemy)
             
             # 3. Проверка коллизий: void cores vs игрок
             if self.player:
