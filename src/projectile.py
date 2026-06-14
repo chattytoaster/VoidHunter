@@ -1,5 +1,6 @@
 import pygame
-from config import BULLET_SPEED, BULLET_SIZE, COLOR_BULLET, SCREEN_WIDTH, SCREEN_HEIGHT, BULLET_DAMAGE
+import os
+from config import BULLET_SPEED, BULLET_SIZE, COLOR_BULLET, SCREEN_WIDTH, SCREEN_HEIGHT, BULLET_DAMAGE, IMAGE_BULLET
 
 class Bullet:
     def __init__(self, x, y, direction_x, direction_y):
@@ -23,6 +24,16 @@ class Bullet:
         self.radius = BULLET_SIZE
         self.damage = BULLET_DAMAGE
         self.active = True
+        
+        # Загрузка спрайта пули
+        self.image = None
+        if os.path.exists(IMAGE_BULLET):
+            try:
+                self.image = pygame.image.load(IMAGE_BULLET).convert()
+                self.image.set_colorkey((0, 0, 0))
+                self.image = pygame.transform.scale(self.image, (self.radius * 2, self.radius * 2))
+            except Exception:
+                pass
 
     def update(self, dt):
         """
@@ -41,14 +52,18 @@ class Bullet:
 
     def render(self, screen):
         """
-        Отрисовка пули в виде простого круга.
+        Отрисовка пули (спрайт или простой круг).
         
         Args:
             screen (pygame.Surface): Поверхность экрана для отрисовки
         """
-        pygame.draw.circle(
-            screen, 
-            COLOR_BULLET, 
-            (int(self.pos.x), int(self.pos.y)), 
-            self.radius
-        )
+        if self.image:
+            rect = self.image.get_rect(center=(int(self.pos.x), int(self.pos.y)))
+            screen.blit(self.image, rect)
+        else:
+            pygame.draw.circle(
+                screen, 
+                COLOR_BULLET, 
+                (int(self.pos.x), int(self.pos.y)), 
+                self.radius
+            )
