@@ -1,21 +1,24 @@
 import math
+import pygame
 
 def circle_collision(pos1, radius1, pos2, radius2):
     """
-    Check if two circles collide.
+    Проверка коллизии двух кругов с использованием pygame.math.Vector2
+    или обычных кортежей.
     
     Args:
-        pos1 (tuple): (x, y) coordinates of the first circle's center
-        radius1 (float): Radius of the first circle
-        pos2 (tuple): (x, y) coordinates of the second circle's center
-        radius2 (float): Radius of the second circle
+        pos1 (tuple/Vector2): Координаты (x, y) центра первого круга
+        radius1 (float): Радиус первого круга
+        pos2 (tuple/Vector2): Координаты (x, y) центра второго круга
+        radius2 (float): Радиус второго круга
         
     Returns:
-        bool: True if circles collide, False otherwise
+        bool: True если круги сталкиваются, иначе False
     """
-    dx = pos1[0] - pos2[0]
-    dy = pos1[1] - pos2[1]
-    distance_squared = dx**2 + dy**2
-    radii_sum_squared = (radius1 + radius2)**2
+    # Конвертируем координаты в Vector2 для универсальности
+    v1 = pygame.math.Vector2(pos1)
+    v2 = pygame.math.Vector2(pos2)
     
-    return distance_squared <= radii_sum_squared
+    # Сравниваем квадрат дистанции с квадратом суммы радиусов 
+    # для оптимизации (без вычисления квадратного корня)
+    return v1.distance_squared_to(v2) <= (radius1 + radius2) ** 2

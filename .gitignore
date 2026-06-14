@@ -9,6 +9,8 @@ env/
 .idea/
 .vscode/
 
+DEV_B_DOCS.md
+
 .pytest_cache/
 .mypy_cache/
 

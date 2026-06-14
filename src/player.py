@@ -2,114 +2,144 @@ import pygame
 import math
 from config import (
     COLOR_PLAYER, PLAYER_SPEED, PLAYER_HP, PLAYER_SIZE,
-    SCREEN_WIDTH, SCREEN_HEIGHT
+    PLAYER_SHOOT_COOLDOWN, SCREEN_WIDTH, SCREEN_HEIGHT
 )
 
 class Player:
     def __init__(self, x, y):
         """
-        Initialize the player.
+        Инициализация игрока.
         
         Args:
-            x (float): Initial x coordinate
-            y (float): Initial y coordinate
+            x (float): Начальная координата x
+            y (float): Начальная координата y
         """
-        self.pos = [x, y]
+        self.pos = pygame.math.Vector2(x, y)
         self.hp = PLAYER_HP
         self.radius = PLAYER_SIZE
         self.speed = PLAYER_SPEED
         self.charge_level = 0
-        self.angle = 0.0  # Angle in radians, pointing towards mouse
+        self.angle = 0.0  # Угол в радианах, указывает на курсор мыши
+        self.shoot_cooldown = PLAYER_SHOOT_COOLDOWN
+        self.shoot_timer = 0.0
 
     def update(self, keys, mouse_pos, dt):
         """
-        Update player position based on keys, rotation based on mouse,
-        and handle shooting logic.
+        Обновление позиции игрока на основе нажатых клавиш, вращения к мыши,
+        а также обработка логики стрельбы.
         
         Args:
-            keys (sequence): State of all keyboard buttons from pygame.key.get_pressed()
-            mouse_pos (tuple): (x, y) coordinates of the mouse
-            dt (float): Delta time in seconds
+            keys (sequence): Состояние всех клавиш клавиатуры от pygame.key.get_pressed()
+            mouse_pos (tuple): (x, y) координаты мыши
+            dt (float): Дельта времени в секундах
             
         Returns:
-            bool: True if player wants to shoot, False otherwise
+            bool: True если игрок хочет стрелять, иначе False
         """
-        # --- Movement logic (WASD) ---
-        dx, dy = 0, 0
+        # --- Логика движения (WASD) ---
+        movement = pygame.math.Vector2(0, 0)
+        
         if keys[pygame.K_w]:
-            dy -= 1
+            movement.y -= 1
         if keys[pygame.K_s]:
-            dy += 1
+            movement.y += 1
         if keys[pygame.K_a]:
-            dx -= 1
+            movement.x -= 1
         if keys[pygame.K_d]:
-            dx += 1
+            movement.x += 1
             
-        # Normalize diagonal movement
-        if dx != 0 or dy != 0:
-            length = math.hypot(dx, dy)
-            dx /= length
-            dy /= length
+        # Нормализуем движение по диагонали, чтобы скорость не превышала PLAYER_SPEED
+        if movement.length_squared() > 0:
+            movement = movement.normalize()
             
-        self.pos[0] += dx * self.speed * dt
-        self.pos[1] += dy * self.speed * dt
+        self.pos += movement * self.speed * dt
         
-        # Constrain to screen bounds
-        self.pos[0] = max(self.radius, min(SCREEN_WIDTH - self.radius, self.pos[0]))
-        self.pos[1] = max(self.radius, min(SCREEN_HEIGHT - self.radius, self.pos[1]))
+        # Ограничиваем движение границами экрана
+        self.pos.x = max(self.radius, min(SCREEN_WIDTH - self.radius, self.pos.x))
+        self.pos.y = max(self.radius, min(SCREEN_HEIGHT - self.radius, self.pos.y))
         
-        # --- Rotation logic ---
-        mouse_dx = mouse_pos[0] - self.pos[0]
-        mouse_dy = mouse_pos[1] - self.pos[1]
-        self.angle = math.atan2(mouse_dy, mouse_dx)
+        # --- Логика вращения ---
+        mouse_vec = pygame.math.Vector2(mouse_pos)
+        direction_vec = mouse_vec - self.pos
+        self.angle = math.atan2(direction_vec.y, direction_vec.x)
         
-        # --- Shooting logic ---
-        # Returns True if SPACE is pressed or Left Mouse Button is clicked
+        # --- Логика стрельбы ---
+        if self.shoot_timer > 0:
+            self.shoot_timer -= dt
+            
         mouse_buttons = pygame.mouse.get_pressed()
         is_shooting = keys[pygame.K_SPACE] or mouse_buttons[0]
         
-        return is_shooting
+        can_shoot = is_shooting and self.shoot_timer <= 0
+        if can_shoot:
+            self.shoot_timer = self.shoot_cooldown
+        
+        return can_shoot
 
     def take_damage(self, amount):
         """
-        Reduce player HP.
+        Уменьшение здоровья (HP) игрока.
         
         Args:
-            amount (int): Amount of damage to take
+            amount (int): Количество получаемого урона
         """
         self.hp -= amount
         
     def add_charge(self, amount=1):
         """
-        Increase player charge level.
+        Увеличение уровня заряда (VoidCore).
         
         Args:
-            amount (int): Amount of charge to add
+            amount (int): Количество добавляемого заряда
         """
         self.charge_level += amount
 
     def render(self, screen):
         """
-        Render the player as a triangle pointing towards the mouse.
+        Отрисовка игрока в виде треугольника, направленного в сторону мыши.
         
         Args:
-            screen (pygame.Surface): The game screen surface
+            screen (pygame.Surface): Поверхность экрана для отрисовки
         """
-        x, y = self.pos[0], self.pos[1]
+        # Вычисление вершин треугольника на основе угла
+        # Нос корабля
+        p1_x = self.pos.x + math.cos(self.angle) * self.radius * 1.5
+        p1_y = self.pos.y + math.sin(self.angle) * self.radius * 1.5
         
-        # Calculate triangle vertices based on angle
-        # Nose of the ship
-        p1_x = x + math.cos(self.angle) * self.radius * 1.5
-        p1_y = y + math.sin(self.angle) * self.radius * 1.5
+        # Левый нижний угол
+        p2_x = self.pos.x + math.cos(self.angle + 2.5) * self.radius
+        p2_y = self.pos.y + math.sin(self.angle + 2.5) * self.radius
         
-        # Bottom left
-        p2_x = x + math.cos(self.angle + 2.5) * self.radius
-        p2_y = y + math.sin(self.angle + 2.5) * self.radius
-        
-        # Bottom right
-        p3_x = x + math.cos(self.angle - 2.5) * self.radius
-        p3_y = y + math.sin(self.angle - 2.5) * self.radius
+        # Правый нижний угол
+        p3_x = self.pos.x + math.cos(self.angle - 2.5) * self.radius
+        p3_y = self.pos.y + math.sin(self.angle - 2.5) * self.radius
         
         points = [(p1_x, p1_y), (p2_x, p2_y), (p3_x, p3_y)]
         
         pygame.draw.polygon(screen, COLOR_PLAYER, points)
+
+    def shoot(self, target_x, target_y):
+        """
+        Создание пули, направленной в сторону цели.
+        
+        Args:
+            target_x (float): Координата x цели
+            target_y (float): Координата y цели
+            
+        Returns:
+            Bullet: Объект пули
+        """
+        from src.projectile import Bullet
+        
+        target = pygame.math.Vector2(target_x, target_y)
+        direction = target - self.pos
+        
+        if direction.length_squared() > 0:
+            direction = direction.normalize()
+        else:
+            direction = pygame.math.Vector2(math.cos(self.angle), math.sin(self.angle))
+            
+        # Спавним пулю на носу корабля
+        spawn_pos = self.pos + direction * self.radius * 1.5
+        
+        return Bullet(spawn_pos.x, spawn_pos.y, direction.x, direction.y)
