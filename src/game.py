@@ -10,6 +10,7 @@ from src.void_core import VoidCore
 from src.ui import Menu, UI
 from src.sound import SoundManager
 from src.spawner import Spawner
+from src.utils import circle_collision
 
 
 class Game:
@@ -46,15 +47,9 @@ class Game:
         self.spawn_timer = 0
         self.wave_number = 0
         
-    def circle_collision(self, x1, y1, r1, x2, y2, r2):
-        """Проверка столкновения двух кругов"""
-        # расстояние между центрами
-        dx = x1 - x2
-        dy = y1 - y2
-        distance = math.sqrt(dx * dx + dy * dy)
-        
-        # если расстояние меньше суммы радиусов - есть столкновение
-        return distance < (r1 + r2)
+    def circle_collision(self, pos1, radius1, pos2, radius2):
+        """Проверка столкновения двух кругов с использованием pygame.math.Vector2 (от Dev B)"""
+        return circle_collision(pos1, radius1, pos2, radius2)
         
     def handle_events(self):
         """Обработка событий клавиатуры и мыши"""
@@ -161,8 +156,7 @@ class Game:
                     continue
                 try:
                     if self.player and hasattr(self.player, 'pos'):
-                        player_pos = (self.player.pos[0], self.player.pos[1])
-                        enemy.update(dt, player_pos)
+                        enemy.update(dt, self.player.pos)
                     else:
                         enemy.update(dt)
                 except TypeError:
@@ -173,10 +167,18 @@ class Game:
                         pass
             # обновляем пули
             for bullet in self.bullets[:]:
-                if not hasattr(bullet, "update") or not hasattr(bullet, "is_off_screen"):
+                if not hasattr(bullet, "update"):
                     continue
                 bullet.update(dt)
-                if bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT):
+                
+                # проверка выхода пули за экран с учетом логики Dev B (bullet.active = False)
+                is_off_screen = False
+                if hasattr(bullet, "is_off_screen"):
+                    is_off_screen = bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT)
+                elif hasattr(bullet, "active"):
+                    is_off_screen = not bullet.active
+                
+                if is_off_screen:
                     self.bullets.remove(bullet)
                 
             # обновляем void cores
@@ -185,102 +187,111 @@ class Game:
                     core.update(dt)
             
             # КОЛЛИЗИИ
-
+            
             # 1. Проверка коллизий: пули vs враги
             for bullet in self.bullets[:]:
                 for enemy in self.enemies[:]:
-                    # Попытка получить координаты/размеры для пули и врага
-                    def _get_xy_size(o):
-                        if hasattr(o, 'x') and hasattr(o, 'y') and hasattr(o, 'size'):
-                            return o.x, o.y, o.size
-                        if hasattr(o, 'pos') and hasattr(o, 'radius'):
-                            return o.pos[0], o.pos[1], o.radius
-                        if hasattr(o, 'pos') and hasattr(o, 'size'):
-                            return o.pos[0], o.pos[1], o.size
-                        return None
+                    b_pos = getattr(bullet, 'pos', None)
+                    b_radius = getattr(bullet, 'radius', getattr(bullet, 'size', 0))
+                    e_pos = getattr(enemy, 'pos', None)
+                    e_radius = getattr(enemy, 'radius', getattr(enemy, 'size', 0))
 
-                    b = _get_xy_size(bullet)
-                    e = _get_xy_size(enemy)
-                    if not b or not e:
-                        continue
+                    if b_pos is not None and e_pos is not None:
+                        if self.circle_collision(b_pos, b_radius, e_pos, e_radius):
+                            # враг получает урон
+                            if hasattr(enemy, 'take_damage') and hasattr(bullet, 'damage'):
+                                enemy.take_damage(bullet.damage)
+                            elif hasattr(enemy, 'take_damage'):
+                                # урон пули по умолчанию 1
+                                enemy.take_damage(1)
 
-                    if self.circle_collision(b[0], b[1], b[2], e[0], e[1], e[2]):
-                        # враг получает урон
-                        if hasattr(enemy, 'take_damage') and hasattr(bullet, 'damage'):
-                            enemy.take_damage(bullet.damage)
+                            # удаляем пулю
+                            if bullet in self.bullets:
+                                self.bullets.remove(bullet)
 
-                        # удаляем пулю
-                        if bullet in self.bullets:
-                            self.bullets.remove(bullet)
+                            # считаем врага мёртвым по нескольким критериям
+                            enemy_dead = False
+                            if hasattr(enemy, 'is_dead') and enemy.is_dead():
+                                enemy_dead = True
+                            elif hasattr(enemy, 'active') and not enemy.active:
+                                enemy_dead = True
+                            elif hasattr(enemy, 'hp') and enemy.hp <= 0:
+                                enemy_dead = True
 
-                        # считаем врага мёртвым по нескольким критериям
-                        enemy_dead = False
-                        if hasattr(enemy, 'is_dead') and enemy.is_dead():
-                            enemy_dead = True
-                        elif hasattr(enemy, 'active') and not enemy.active:
-                            enemy_dead = True
-                        elif hasattr(enemy, 'hp') and enemy.hp <= 0:
-                            enemy_dead = True
+                            if enemy_dead:
+                                # начисление очков
+                                if hasattr(enemy, 'score'):
+                                    self.score += enemy.score
+                                elif hasattr(enemy, 'radius'):
+                                    # очки зависят от размера врага
+                                    self.score += int(enemy.radius)
 
-                        if enemy_dead:
-                            if hasattr(enemy, 'score'):
-                                self.score += enemy.score
+                                # дроп VoidCore (50% шанс)
+                                if random.random() < VOID_CORE_DROP_CHANCE:
+                                    core = VoidCore(e_pos.x, e_pos.y)
+                                    self.void_cores.append(core)
 
-                            # дроп VoidCore (50% шанс)
-                            if random.random() < VOID_CORE_DROP_CHANCE:
-                                # пытаемся взять координаты врага для спауна
-                                ex, ey, _ = e
-                                core = VoidCore(ex, ey)
-                                self.void_cores.append(core)
-
-                            if enemy in self.enemies:
-                                self.enemies.remove(enemy)
-                        break
+                                if enemy in self.enemies:
+                                    self.enemies.remove(enemy)
+                            break
             
             # 2. Проверка коллизий: враги vs игрок
             if self.player:
                 for enemy in self.enemies[:]:
-                    # Получаем координаты игрока и врага
-                    def _get_xy_size(o):
-                        if hasattr(o, 'x') and hasattr(o, 'y') and hasattr(o, 'size'):
-                            return o.x, o.y, o.size
-                        if hasattr(o, 'pos') and hasattr(o, 'radius'):
-                            return o.pos[0], o.pos[1], o.radius
-                        if hasattr(o, 'pos') and hasattr(o, 'size'):
-                            return o.pos[0], o.pos[1], o.size
-                        return None
+                    p_pos = getattr(self.player, 'pos', None)
+                    p_radius = getattr(self.player, 'radius', getattr(self.player, 'size', 0))
+                    e_pos = getattr(enemy, 'pos', None)
+                    e_radius = getattr(enemy, 'radius', getattr(enemy, 'size', 0))
 
-                    p = _get_xy_size(self.player)
-                    e = _get_xy_size(enemy)
-                    if not p or not e:
-                        continue
+                    if p_pos is not None and e_pos is not None:
+                        if self.circle_collision(p_pos, p_radius, e_pos, e_radius):
+                            # игрок получает урон
+                            damage = getattr(enemy, 'damage', 1)  # урон по умолчанию 1
+                            if hasattr(self.player, 'take_damage'):
+                                self.player.take_damage(damage)
 
-                    if self.circle_collision(p[0], p[1], p[2], e[0], e[1], e[2]):
-                        # игрок получает урон
-                        if hasattr(self.player, 'take_damage') and hasattr(enemy, 'damage'):
-                            self.player.take_damage(enemy.damage)
-
-                        # враг умирает при столкновении
-                        if enemy in self.enemies:
-                            self.enemies.remove(enemy)
+                            # враг умирает при столкновении
+                            if enemy in self.enemies:
+                                self.enemies.remove(enemy)
             
             # 3. Проверка коллизий: void cores vs игрок
             if self.player:
                 for core in self.void_cores[:]:
-                    if (hasattr(self.player, 'x') and hasattr(self.player, 'y') and hasattr(self.player, 'size') and
-                        hasattr(core, 'is_collected')):
+                    p_pos = getattr(self.player, 'pos', None)
+                    p_radius = getattr(self.player, 'radius', getattr(self.player, 'size', 0))
+                    c_pos = getattr(core, 'pos', None)
+                    c_radius = getattr(core, 'radius', getattr(core, 'size', 0))
+                    
+                    is_collected = False
+                    if hasattr(core, 'is_collected'):
+                        try:
+                            if p_pos is not None:
+                                is_collected = core.is_collected(p_pos.x, p_pos.y, p_radius)
+                        except Exception:
+                            pass
+                    elif p_pos is not None and c_pos is not None:
+                        # если метод is_collected не определен, используем коллизию кругов
+                        is_collected = self.circle_collision(p_pos, p_radius, c_pos, c_radius)
+                    
+                    if is_collected:
+                        # логика прокачки
+                        if hasattr(self.player, 'add_charge'):
+                            self.player.add_charge()
+                        elif hasattr(self.player, 'collect_void_core'):
+                            self.player.collect_void_core()
                         
-                        if core.is_collected(self.player.x, self.player.y, self.player.size):
-                            # логика прокачки
-                            if hasattr(self.player, 'collect_void_core'):
-                                self.player.collect_void_core()
-                            
-                            if core in self.void_cores:
-                                self.void_cores.remove(core)
+                        if core in self.void_cores:
+                            self.void_cores.remove(core)
             
             # 4. Проверка Game Over
-            if self.player and hasattr(self.player, 'is_dead'):
-                if self.player.is_dead():
+            if self.player:
+                is_dead = False
+                if hasattr(self.player, 'is_dead'):
+                    is_dead = self.player.is_dead()
+                elif hasattr(self.player, 'hp'):
+                    is_dead = self.player.hp <= 0
+                
+                if is_dead:
                     self.game_state = "GAME_OVER"
     
     def render(self):
