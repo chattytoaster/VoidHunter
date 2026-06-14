@@ -2,7 +2,7 @@ import pygame
 import math
 from config import (
     COLOR_PLAYER, PLAYER_SPEED, PLAYER_HP, PLAYER_SIZE,
-    SCREEN_WIDTH, SCREEN_HEIGHT
+    PLAYER_SHOOT_COOLDOWN, SCREEN_WIDTH, SCREEN_HEIGHT
 )
 
 class Player:
@@ -20,6 +20,8 @@ class Player:
         self.speed = PLAYER_SPEED
         self.charge_level = 0
         self.angle = 0.0  # Угол в радианах, указывает на курсор мыши
+        self.shoot_cooldown = PLAYER_SHOOT_COOLDOWN
+        self.shoot_timer = 0.0
 
     def update(self, keys, mouse_pos, dt):
         """
@@ -62,11 +64,17 @@ class Player:
         self.angle = math.atan2(direction_vec.y, direction_vec.x)
         
         # --- Логика стрельбы ---
-        # Возвращает True, если нажат ПРОБЕЛ или левая кнопка мыши
+        if self.shoot_timer > 0:
+            self.shoot_timer -= dt
+            
         mouse_buttons = pygame.mouse.get_pressed()
         is_shooting = keys[pygame.K_SPACE] or mouse_buttons[0]
         
-        return is_shooting
+        can_shoot = is_shooting and self.shoot_timer <= 0
+        if can_shoot:
+            self.shoot_timer = self.shoot_cooldown
+        
+        return can_shoot
 
     def take_damage(self, amount):
         """
