@@ -331,23 +331,11 @@ class Game:
             # рисуем UI (счет)
             if hasattr(self, 'ui'):
                 self.ui.render(self.screen, self.player, self.score)
-            else:
-                font = pygame.font.Font(None, 30)
-                score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
-                self.screen.blit(score_text, (10, 10))
             
         elif self.game_state == "GAME_OVER":
             font = pygame.font.Font(None, 50)
             if hasattr(self, 'ui'):
                 self.ui.render_game_over(self.screen, self.score)
-            else:
-                text = font.render("GAME OVER", True, (255, 0, 0))
-                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-                self.screen.blit(text, text_rect)
-            
-            score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
-            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 60))
-            self.screen.blit(score_text, score_rect)
         
         # обновляем экран
         pygame.display.flip()

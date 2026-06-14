@@ -44,3 +44,12 @@ BASE_ENEMIES_PER_WAVE = 2
 # VoidCore
 VOID_CORE_SIZE = 8
 VOID_CORE_DROP_CHANCE = 0.5
+
+# Пути к ассетам
+import os
+FONT_PATH = os.path.join("assets", "fonts", "ArcadeJeu-Regular.otf")
+IMAGE_PLAYER = os.path.join("assets", "images", "player_ship.png")
+IMAGE_DRONE = os.path.join("assets", "images", "drone.png")
+IMAGE_METEORITE = os.path.join("assets", "images", "meteorite.png")
+IMAGE_BULLET = os.path.join("assets", "images", "bullet.png")
+IMAGE_VOID_CORE = os.path.join("assets", "images", "void_core.png")

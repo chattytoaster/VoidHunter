@@ -2,7 +2,8 @@
 
 import pygame
 import random
-from config import SCREEN_WIDTH, SCREEN_HEIGHT
+import os
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH
 
 
 class MovingStar:
@@ -42,8 +43,9 @@ class Menu:
     
     def __init__(self):
         # Шрифты
-        self.font_title = pygame.font.Font(None, 74)
-        self.font_button = pygame.font.Font(None, 36)
+        font_file = FONT_PATH if os.path.exists(FONT_PATH) else None
+        self.font_title = pygame.font.Font(font_file, 74)
+        self.font_button = pygame.font.Font(font_file, 36)
         
         # Цвета
         self.white = (255, 255, 255)
@@ -136,8 +138,9 @@ class UI:
     """Класс игрового интерфейса"""
     
     def __init__(self):
-        self.font = pygame.font.Font(None, 36)
-        self.font_large = pygame.font.Font(None, 72)
+        font_file = FONT_PATH if os.path.exists(FONT_PATH) else None
+        self.font = pygame.font.Font(font_file, 36)
+        self.font_large = pygame.font.Font(font_file, 72)
         self.white = (255, 255, 255)
         self.red = (255, 0, 0)
         self.green = (0, 255, 0)

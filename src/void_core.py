@@ -2,7 +2,9 @@
 
 import pygame
 import math
+import os
 import config
+from config import IMAGE_VOID_CORE
 
 
 # Опциональные настройки (если их нет в config.py - используются значения по умолчанию)
@@ -27,6 +29,15 @@ class VoidCore:
         self.pickup_radius = VOID_CORE_PICKUP_RADIUS
         self.timer = 0.0
         self.active = True
+
+        # Загрузка спрайта ядра
+        self.image = None
+        if os.path.exists(IMAGE_VOID_CORE):
+            try:
+                self.image = pygame.image.load(IMAGE_VOID_CORE).convert()
+                self.image.set_colorkey((0, 0, 0))
+            except Exception:
+                pass
 
     def update(self, dt):
         """
@@ -57,7 +68,7 @@ class VoidCore:
 
     def render(self, screen):
         """
-        Отрисовка пульсирующего ядра с эффектом сияния.
+        Отрисовка пульсирующего ядра (спрайт или векторный круг) с эффектом сияния.
 
         Args:
             screen (pygame.Surface): поверхность экрана
@@ -81,7 +92,13 @@ class VoidCore:
 
         # Основное тело ядра (пульсирует по размеру)
         core_radius = int(self.radius + pulse * 2)
-        pygame.draw.circle(screen, VOID_CORE_COLOR, (x, y), core_radius)
+        
+        if self.image:
+            scaled_image = pygame.transform.scale(self.image, (core_radius * 2, core_radius * 2))
+            rect = scaled_image.get_rect(center=(x, y))
+            screen.blit(scaled_image, rect)
+        else:
+            pygame.draw.circle(screen, VOID_CORE_COLOR, (x, y), core_radius)
 
-        # Яркий центр
-        pygame.draw.circle(screen, (255, 255, 255), (x, y), max(1, int(self.radius * 0.35)))
+            # Яркий центр
+            pygame.draw.circle(screen, (255, 255, 255), (x, y), max(1, int(self.radius * 0.35)))
