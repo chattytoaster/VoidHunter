@@ -3,7 +3,7 @@
 import random
 import config
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, WAVE_INTERVAL, BASE_ENEMIES_PER_WAVE
-from enemy import Drone, Meteorite
+from src.enemy import Drone, Meteorite
 
 
 # Опциональные настройки (если их нет в config.py - используются значения по умолчанию)

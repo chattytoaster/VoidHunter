@@ -6,10 +6,8 @@ import os
 DEFAULT_SOUNDS = {
     "shoot": "shoot.wav",
     "explosion": "explosion.wav",
-    "player_hit": "player_hit.wav",
-    "pickup": "pickup.wav",
-    "game_over": "game_over.wav",
-    "menu_select": "menu_select.wav",
+    "player_hit": "hit.wav",
+    "pickup": "collect.wav",
 }
 
 SOUNDS_DIR = os.path.join("assets", "sounds")

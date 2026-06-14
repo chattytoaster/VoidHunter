@@ -59,11 +59,20 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
                 
+            # Обработка событий в меню
+            if self.game_state == "MENU" and hasattr(self, 'menu'):
+                mouse_pos = pygame.mouse.get_pos()
+                menu_action = self.menu.handle_event(event, mouse_pos)
+                if menu_action == "start":
+                    self.start_game()
+                elif menu_action == "exit":
+                    self.running = False
+                    
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 
-                # начать игру из меню
+                # начать игру из меню (резервный запуск)
                 if event.key == pygame.K_SPACE and self.game_state == "MENU":
                     self.start_game()
                 
@@ -78,6 +87,8 @@ class Game:
                         bullet = self.player.shoot(mouse_pos[0], mouse_pos[1])
                         if bullet:
                             self.bullets.append(bullet)
+                            if hasattr(self, 'sound'):
+                                self.sound.play("shoot")
                         
             # клик мыши для стрельбы
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -87,44 +98,16 @@ class Game:
                         bullet = self.player.shoot(mouse_pos[0], mouse_pos[1])
                         if bullet:
                             self.bullets.append(bullet)
+                            if hasattr(self, 'sound'):
+                                self.sound.play("shoot")
     
     def spawn_enemies(self, dt):
-        """Спавн врагов волнами"""
-        self.spawn_timer += dt
-        
-        # если прошло достаточно времени - создаем новую волну
-        if self.spawn_timer >= WAVE_INTERVAL:
-            self.spawn_timer = 0
-            self.wave_number += 1
-            
-            # количество врагов в волне растет
-            num_enemies = BASE_ENEMIES_PER_WAVE + self.wave_number
-            
-            for i in range(num_enemies):
-                # выбираем случайный тип врага
-                enemy_type = random.choice(['drone', 'meteorite'])
-                
-                # случайная позиция на краю экрана
-                side = random.randint(0, 3)
-                if side == 0:  # верх
-                    x = random.randint(0, SCREEN_WIDTH)
-                    y = 0
-                elif side == 1:  # право
-                    x = SCREEN_WIDTH
-                    y = random.randint(0, SCREEN_HEIGHT)
-                elif side == 2:  # низ
-                    x = random.randint(0, SCREEN_WIDTH)
-                    y = SCREEN_HEIGHT
-                else:  # лево
-                    x = 0
-                    y = random.randint(0, SCREEN_HEIGHT)
-                
-                # создаем врага
-                if enemy_type == 'drone':
-                    enemy = Drone(x, y)
-                else:
-                    enemy = Meteorite(x, y)
-                self.enemies.append(enemy)
+        """Спавн врагов волнами с помощью Spawner"""
+        if hasattr(self, 'spawner'):
+            new_enemies = self.spawner.update(dt)
+            self.enemies.extend(new_enemies)
+            # Синхронизируем wave_number с Spawner
+            self.wave_number = self.spawner.wave_number
     
     def update(self, dt):
         """Обновление логики игры"""
@@ -146,6 +129,8 @@ class Game:
                     bullet = self.player.shoot(mouse_pos[0], mouse_pos[1])
                     if bullet:
                         self.bullets.append(bullet)
+                        if hasattr(self, 'sound'):
+                            self.sound.play("shoot")
 
             # спавним врагов
             self.spawn_enemies(dt)
@@ -226,6 +211,10 @@ class Game:
                                     # очки зависят от размера врага
                                     self.score += int(enemy.radius)
 
+                                # воспроизведение звука взрыва
+                                if hasattr(self, 'sound'):
+                                    self.sound.play("explosion")
+
                                 # дроп VoidCore (50% шанс)
                                 if random.random() < VOID_CORE_DROP_CHANCE:
                                     core = VoidCore(e_pos.x, e_pos.y)
@@ -249,10 +238,14 @@ class Game:
                             damage = getattr(enemy, 'damage', 1)  # урон по умолчанию 1
                             if hasattr(self.player, 'take_damage'):
                                 self.player.take_damage(damage)
+                                if hasattr(self, 'sound'):
+                                    self.sound.play("player_hit")
 
                             # враг умирает при столкновении
                             if enemy in self.enemies:
                                 self.enemies.remove(enemy)
+                                if hasattr(self, 'sound'):
+                                    self.sound.play("explosion")
             
             # 3. Проверка коллизий: void cores vs игрок
             if self.player:
@@ -280,6 +273,9 @@ class Game:
                         elif hasattr(self.player, 'collect_void_core'):
                             self.player.collect_void_core()
                         
+                        if hasattr(self, 'sound'):
+                            self.sound.play("pickup")
+                        
                         if core in self.void_cores:
                             self.void_cores.remove(core)
             
@@ -293,6 +289,10 @@ class Game:
                 
                 if is_dead:
                     self.game_state = "GAME_OVER"
+                    
+        elif self.game_state == "MENU":
+            if hasattr(self, 'menu'):
+                self.menu.update(dt)
     
     def render(self):
         """Отрисовка"""
@@ -358,6 +358,9 @@ class Game:
         self.score = 0
         self.spawn_timer = 0
         self.wave_number = 0
+        
+        if hasattr(self, 'spawner'):
+            self.spawner.reset()
         
         # очищаем списки
         self.enemies.clear()
