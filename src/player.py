@@ -1,8 +1,10 @@
 import pygame
 import math
+import os
 from config import (
     COLOR_PLAYER, PLAYER_SPEED, PLAYER_HP, PLAYER_SIZE,
-    PLAYER_SHOOT_COOLDOWN, SCREEN_WIDTH, SCREEN_HEIGHT
+    PLAYER_SHOOT_COOLDOWN, SCREEN_WIDTH, SCREEN_HEIGHT,
+    IMAGE_PLAYER
 )
 
 class Player:
@@ -22,6 +24,17 @@ class Player:
         self.angle = 0.0  # Угол в радианах, указывает на курсор мыши
         self.shoot_cooldown = PLAYER_SHOOT_COOLDOWN
         self.shoot_timer = 0.0
+        
+        # Загрузка спрайта игрока
+        self.image = None
+        if os.path.exists(IMAGE_PLAYER):
+            try:
+                self.image = pygame.image.load(IMAGE_PLAYER).convert()
+                self.image.set_colorkey((0, 0, 0))
+                # Масштабируем спрайт до размера игрока
+                self.image = pygame.transform.scale(self.image, (self.radius * 2, self.radius * 2))
+            except Exception:
+                pass
 
     def update(self, keys, mouse_pos, dt):
         """
@@ -96,27 +109,36 @@ class Player:
 
     def render(self, screen):
         """
-        Отрисовка игрока в виде треугольника, направленного в сторону мыши.
+        Отрисовка игрока (спрайт или векторный треугольник).
         
         Args:
             screen (pygame.Surface): Поверхность экрана для отрисовки
         """
-        # Вычисление вершин треугольника на основе угла
-        # Нос корабля
-        p1_x = self.pos.x + math.cos(self.angle) * self.radius * 1.5
-        p1_y = self.pos.y + math.sin(self.angle) * self.radius * 1.5
-        
-        # Левый нижний угол
-        p2_x = self.pos.x + math.cos(self.angle + 2.5) * self.radius
-        p2_y = self.pos.y + math.sin(self.angle + 2.5) * self.radius
-        
-        # Правый нижний угол
-        p3_x = self.pos.x + math.cos(self.angle - 2.5) * self.radius
-        p3_y = self.pos.y + math.sin(self.angle - 2.5) * self.radius
-        
-        points = [(p1_x, p1_y), (p2_x, p2_y), (p3_x, p3_y)]
-        
-        pygame.draw.polygon(screen, COLOR_PLAYER, points)
+        if self.image:
+            # pygame.transform.rotate поворачивает против часовой стрелки, поэтому преобразуем угол
+            # и вычитаем 90 градусов, так как спрайт изначально направлен вверх
+            angle_degrees = -math.degrees(self.angle) - 90
+            rotated_image = pygame.transform.rotate(self.image, angle_degrees)
+            rect = rotated_image.get_rect(center=(int(self.pos.x), int(self.pos.y)))
+            screen.blit(rotated_image, rect)
+        else:
+            # Резервная отрисовка треугольника
+            # Вычисление вершин треугольника на основе угла
+            # Нос корабля
+            p1_x = self.pos.x + math.cos(self.angle) * self.radius * 1.5
+            p1_y = self.pos.y + math.sin(self.angle) * self.radius * 1.5
+            
+            # Левый нижний угол
+            p2_x = self.pos.x + math.cos(self.angle + 2.5) * self.radius
+            p2_y = self.pos.y + math.sin(self.angle + 2.5) * self.radius
+            
+            # Правый нижний угол
+            p3_x = self.pos.x + math.cos(self.angle - 2.5) * self.radius
+            p3_y = self.pos.y + math.sin(self.angle - 2.5) * self.radius
+            
+            points = [(p1_x, p1_y), (p2_x, p2_y), (p3_x, p3_y)]
+            
+            pygame.draw.polygon(screen, COLOR_PLAYER, points)
 
     def shoot(self, target_x, target_y):
         """
