@@ -12,6 +12,32 @@ from src.sound import SoundManager
 from src.spawner import Spawner
 from src.utils import circle_collision
 
+class Star(pygame.sprite.Sprite):
+    """Класс звезды из лекции"""
+
+    def __init__(self, width, height, *group):
+        super().__init__(*group)
+        self.width = width
+        self.height = height
+        self.len = random.randint(1, 6)
+
+        self.image = pygame.Surface((self.len, self.len))
+        self.image.set_colorkey((0, 0, 0))
+        radius = max(1, self.len // 2)
+        pygame.draw.circle(self.image, (200, 200, 200), (self.len // 2, self.len // 2), radius)
+
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(self.width)
+        self.rect.y = random.randrange(self.height)
+        self.x = float(self.rect.x)
+        self.y = float(self.rect.y)
+
+    def update(self, dt):
+        self.x += 0.1 * (self.len // 2) * 60 * dt
+        self.y += 0.05 * 60 * dt
+        self.rect.x = int(self.x) % self.width
+        self.rect.y = int(self.y) % self.height
+
 
 class Game:
     """Главный класс игры"""
@@ -29,12 +55,16 @@ class Game:
         
         # создаем игрока
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
+        self.stars_group = pygame.sprite.Group()
+        for _ in range(70):
+            Star(SCREEN_WIDTH, SCREEN_HEIGHT, self.stars_group)
         
         # списки для объектов
         self.enemies = []  # будет заполняться в spawn_enemies()
         self.bullets = []  # будет заполняться при стрельбе
         self.void_cores = []  # будет заполняться при смерти врагов
-
+ 
         self.menu = Menu()
         self.ui = UI()
         self.sound = SoundManager()
@@ -48,7 +78,7 @@ class Game:
         self.wave_number = 0
         
     def circle_collision(self, pos1, radius1, pos2, radius2):
-        """Проверка столкновения двух кругов с использованием pygame.math.Vector2 (от Dev B)"""
+        """Проверка столкновения двух кругов"""
         return circle_collision(pos1, radius1, pos2, radius2)
         
     def handle_events(self):
@@ -111,6 +141,11 @@ class Game:
     
     def update(self, dt):
         """Обновление логики игры"""
+        
+        # Обновляем звезды фона во время игры и на экране Game Over
+        if self.game_state in ("PLAYING", "GAME_OVER"):
+            if hasattr(self, 'stars_group'):
+                self.stars_group.update(dt)
 
         if self.game_state == "PLAYING":
             # обновляем игрока
@@ -309,6 +344,10 @@ class Game:
                 self.screen.blit(text, text_rect)
             
         elif self.game_state == "PLAYING":
+            # рисуем звезды фона
+            if hasattr(self, 'stars_group'):
+                self.stars_group.draw(self.screen)
+
             # рисуем врагов
             for enemy in self.enemies:
                 if hasattr(enemy, 'render'):
@@ -333,7 +372,10 @@ class Game:
                 self.ui.render(self.screen, self.player, self.score)
             
         elif self.game_state == "GAME_OVER":
-            font = pygame.font.Font(None, 50)
+            # рисуем звезды фона
+            if hasattr(self, 'stars_group'):
+                self.stars_group.draw(self.screen)
+
             if hasattr(self, 'ui'):
                 self.ui.render_game_over(self.screen, self.score)
         
