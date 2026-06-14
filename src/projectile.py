@@ -1,5 +1,5 @@
 import pygame
-from config import BULLET_SPEED, BULLET_SIZE, COLOR_BULLET, SCREEN_WIDTH, SCREEN_HEIGHT
+from config import BULLET_SPEED, BULLET_SIZE, COLOR_BULLET, SCREEN_WIDTH, SCREEN_HEIGHT, BULLET_DAMAGE
 
 class Bullet:
     def __init__(self, x, y, direction_x, direction_y):
@@ -21,6 +21,7 @@ class Bullet:
             
         self.speed = BULLET_SPEED
         self.radius = BULLET_SIZE
+        self.damage = BULLET_DAMAGE
         self.active = True
 
     def update(self, dt):

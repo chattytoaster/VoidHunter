@@ -117,3 +117,29 @@ class Player:
         points = [(p1_x, p1_y), (p2_x, p2_y), (p3_x, p3_y)]
         
         pygame.draw.polygon(screen, COLOR_PLAYER, points)
+
+    def shoot(self, target_x, target_y):
+        """
+        Создание пули, направленной в сторону цели.
+        
+        Args:
+            target_x (float): Координата x цели
+            target_y (float): Координата y цели
+            
+        Returns:
+            Bullet: Объект пули
+        """
+        from src.projectile import Bullet
+        
+        target = pygame.math.Vector2(target_x, target_y)
+        direction = target - self.pos
+        
+        if direction.length_squared() > 0:
+            direction = direction.normalize()
+        else:
+            direction = pygame.math.Vector2(math.cos(self.angle), math.sin(self.angle))
+            
+        # Спавним пулю на носу корабля
+        spawn_pos = self.pos + direction * self.radius * 1.5
+        
+        return Bullet(spawn_pos.x, spawn_pos.y, direction.x, direction.y)
