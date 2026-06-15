@@ -61,7 +61,7 @@ class Game:
             Star(SCREEN_WIDTH, SCREEN_HEIGHT, self.stars_group)
         
         # списки для объектов
-        self.enemies = []  # будет заполняться в spawn_enemies()
+        self.enemies = []  # будет заполняться при спавне
         self.bullets = []  # будет заполняться при стрельбе
         self.void_cores = []  # будет заполняться при смерти врагов
  
@@ -84,7 +84,7 @@ class Game:
     def handle_events(self):
         """Обработка событий клавиатуры и мыши"""
 
-        # pygame.event.get() возвращает все события, которые произошли с прошлого кадра.
+        # pygame.event.get() возвращает все события, которые произошли с прошлого кадра
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -102,7 +102,7 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 
-                # начать игру из меню (резервный запуск)
+                # начать игру из меню
                 if event.key == pygame.K_SPACE and self.game_state == "MENU":
                     self.start_game()
                 
@@ -171,7 +171,7 @@ class Game:
             self.spawn_enemies(dt)
             
             # обновляем врагов
-            for enemy in self.enemies[:]:
+            for enemy in self.enemies[:]: # перебираем копию списка, удаляем в ориге
                 if not hasattr(enemy, "update"):
                     continue
                 try:
@@ -191,7 +191,7 @@ class Game:
                     continue
                 bullet.update(dt)
                 
-                # проверка выхода пули за экран с учетом логики Dev B (bullet.active = False)
+                # проверка выхода пули за экран
                 is_off_screen = False
                 if hasattr(bullet, "is_off_screen"):
                     is_off_screen = bullet.is_off_screen(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -205,8 +205,6 @@ class Game:
             for core in self.void_cores[:]:
                 if hasattr(core, 'update'):
                     core.update(dt)
-            
-            # КОЛЛИЗИИ
             
             # 1. Проверка коллизий: пули vs враги
             for bullet in self.bullets[:]:
@@ -257,7 +255,7 @@ class Game:
 
                                 if enemy in self.enemies:
                                     self.enemies.remove(enemy)
-                            break
+                            break # остановка перебора конкретной пули
             
             # 2. Проверка коллизий: враги vs игрок
             if self.player:
