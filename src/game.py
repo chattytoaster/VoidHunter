@@ -323,7 +323,7 @@ class Game:
                     is_dead = self.player.hp <= 0
                 
                 if is_dead:
-                    self.game_state = "GAME_OVER"
+                    self.game_over()
                     
         elif self.game_state == "MENU":
             if hasattr(self, 'menu'):
@@ -399,10 +399,18 @@ class Game:
         
         # создаем игрока
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        
+        # запускаем фоновую музыку
+        if hasattr(self, 'sound'):
+            self.sound.play_background_music(loop=True)
 
     def game_over(self):
         """Переход в состояние Game Over"""
         self.game_state = "GAME_OVER"
+        if hasattr(self, 'sound'):
+            self.sound.stop_music()
+            self.sound.play("game_over")
+
     
     def run(self):
         """Основной игровой цикл"""
