@@ -1,9 +1,8 @@
 import pygame
 import os
 from config import BULLET_SPEED, BULLET_SIZE, COLOR_BULLET, SCREEN_WIDTH, SCREEN_HEIGHT, BULLET_DAMAGE, IMAGE_BULLET
-
 class Bullet:
-    def __init__(self, x, y, direction_x, direction_y):
+    def __init__(self, x, y, direction_x, direction_y, charge=0):
         """
         Инициализация пули.
         
@@ -19,10 +18,11 @@ class Bullet:
         # Убеждаемся, что направление нормализовано
         if self.dir.length_squared() > 0:
             self.dir = self.dir.normalize()
-            
+           
+         
         self.speed = BULLET_SPEED
         self.radius = BULLET_SIZE
-        self.damage = BULLET_DAMAGE
+        self.damage = BULLET_DAMAGE + (charge * 0.05)
         self.active = True
         
         # Загрузка спрайта пули

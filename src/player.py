@@ -164,4 +164,4 @@ class Player:
         # Спавним пулю на носу корабля
         spawn_pos = self.pos + direction * self.radius * 1.5
         
-        return Bullet(spawn_pos.x, spawn_pos.y, direction.x, direction.y)
+        return Bullet(spawn_pos.x, spawn_pos.y, direction.x, direction.y, self.charge_level)
