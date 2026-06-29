@@ -47,7 +47,6 @@ VOID_CORE_DROP_CHANCE = 0.5
 
 # Пути к ассетам
 import os
-FONT_PATH = os.path.join("assets", "fonts", "ArcadeJeu-Regular.otf")
 IMAGE_PLAYER = os.path.join("assets", "images", "player_ship.png")
 IMAGE_DRONE = os.path.join("assets", "images", "drone.png")
 IMAGE_METEORITE = os.path.join("assets", "images", "meteorite.png")
